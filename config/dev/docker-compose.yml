@@ -1,0 +1,42 @@
+services:
+#  redis:
+#    image: "redis:alpine"
+#    expose:
+#      - "6379"
+#    volumes:
+#      - ../../redis_data:/data
+#    networks:
+#      - calendar_bot
+
+#  app:
+#    user: "1000:1000"
+#    build:
+#      context: ../../app
+#    volumes:
+#      - ../../app:/app
+#    env_file:
+#      - .env
+#    ports:
+#      - "8000:8000"
+#    networks:
+#      - calendar_bot
+#    command: python3 main.py
+
+  bot:
+    user: "1000:1000"
+    build:
+      context: ../../bot
+    volumes:
+      - ../../bot:/bot
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    networks:
+      - calendar_bot
+    command: python3 main.py --no-webhook
+
+networks:
+  calendar_bot:
+    name: calendar_bot
+    external: false
