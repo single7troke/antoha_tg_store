@@ -3,6 +3,7 @@ import asyncio
 import json
 import logging
 
+import aioredis
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
@@ -11,10 +12,11 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 
 from api import user_router, main_menu
-from core.config import Config
+from db import redis
+from core import get_config
 # from middleware.user_access import UserAccessMiddleware, AdminAccessMiddleware
 
-config = Config()
+config = get_config()
 parser = argparse.ArgumentParser()
 parser.add_argument('--webhook', action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
@@ -66,8 +68,18 @@ async def set_commands(bot: Bot):
     await bot.set_my_commands(commands=commands)
 
 
+async def create_redis_client():
+    client = await aioredis.from_url(
+        url=f"redis://{config.cache.host}:{config.cache.port}",
+        encoding="utf-8",
+        # decode_responses=True
+    )
+    return client
+
+
 async def polling_setup(bot: Bot, dp: Dispatcher):
     try:
+        redis.redis = await create_redis_client()
         await bot.delete_webhook()
         await set_commands(bot)
         await dp.start_polling(bot)
@@ -92,8 +104,9 @@ if __name__ == '__main__':
                         datefmt="%Y/%m/%d %H:%M:%S",
                         level=config.log_lvl)
 
+
     default = DefaultBotProperties(parse_mode='HTML')
-    bot = Bot(token=config.tg_bot_token, default=default)
+    bot = Bot(token=config.bot.token, default=default)
     dp = Dispatcher()
     dp.message.register(welcome, Command(commands=["start"]))
     # dp.message.register(description, Command(commands=["about"]))

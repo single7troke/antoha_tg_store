@@ -10,3 +10,4 @@ async def get(course_id: int) -> Course | None:
     for course in COURSES:
         if course.id == course_id:
             return course
+

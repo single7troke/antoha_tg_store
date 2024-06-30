@@ -19,3 +19,7 @@ class CatalogCallback(BaseCallback, prefix='catalog'):
 
 class CourseCallback(BaseCallback, prefix='course'):
     data: int
+
+
+class PayButtonCallback(BaseCallback, prefix='pay'):
+    pass

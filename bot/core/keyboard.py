@@ -1,16 +1,16 @@
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-from .config import Config
+from core import get_config
 from .callback import *
 from models.models import Course
 
-config = Config()
+config = get_config()
 
 COURSES = [
-    Course(id=1, name='first course', price=1000, description='Описание\nкурса\nномер\nраз'),
-    Course(id=2, name='second course', price=99999, description='Описание\nкурса\nномер\nдва'),
-    Course(id=3, name='Third course', price=23)
+    Course(id=1001, name='first course', price='1000.00', description='Описание\nкурса\nномер\nраз'),
+    Course(id=1002, name='second course', price='123.00', description='Описание\nкурса\nномер\nдва'),
+    Course(id=1003, name='Third course', price='500.00')
 ]
 
 
@@ -48,9 +48,10 @@ async def catalog_keyboard():
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-async def selected_course_keyboard():
+async def selected_course_keyboard(payment_link):
     buttons = [
-        # [types.InlineKeyboardButton(text='Купить')],
+        [types.InlineKeyboardButton(text=config.buttons.buy, url=payment_link)],
+        # [types.InlineKeyboardButton(text=config.buttons.buy, pay=True)],
         [types.InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='catalog').pack())]
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)

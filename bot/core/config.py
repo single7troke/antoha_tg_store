@@ -1,29 +1,43 @@
 import logging
 import os
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Buttons(BaseSettings):
     back: str = '<- Назад'
     catalog: str = 'Каталог курсов'
     about: str = 'Обо мне'
+    buy: str = 'Купить'
 
 
 class BotConfig(BaseSettings):
-    pass
+    model_config = SettingsConfigDict(env_prefix='tg_')
+
+    token: str
+    pay_token: str
+    name: str = 'bestbassbot'
+    link: str = f'https://t.me/{name}'
 
 
 class AppConfig(BaseSettings):
-    pass
+    model_config = SettingsConfigDict(env_prefix='app_')
 
 
 class Cache(BaseSettings):
-    pass
+    model_config = SettingsConfigDict(env_prefix='redis_')
+    host: str
+    port: int
 
 
 class DB(BaseSettings):
-    pass
+    model_config = SettingsConfigDict(env_prefix='db_')
+
+
+class Payment(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix='pay_')
+    yookassa_account_id: int
+    yookassa_secret_key: str
 
 
 class Config(BaseSettings):
@@ -35,9 +49,23 @@ class Config(BaseSettings):
     # path_to_pem_file: str = "/etc/ssl/certs/YOURPUBLIC.pem"
     server_ip: str = ""
     server_url: str = ""
-    tg_bot_token: str
     buttons: Buttons = Buttons()
     bot: BotConfig = BotConfig()
     app: AppConfig = AppConfig()
     db: DB = DB()
     cache: Cache = Cache()
+    payment: Payment = Payment()
+
+
+config: Config | None = None
+
+
+def get_config() -> Config:
+    if not config:
+        init_config()
+    return config
+
+
+def init_config():
+    global config
+    config = Config()
