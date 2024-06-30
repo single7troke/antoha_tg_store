@@ -5,8 +5,8 @@ from aioredis.exceptions import ConnectionError
 from fastapi import Depends
 from tenacity import retry, stop_after_delay, RetryCallState, retry_if_exception_type, wait_exponential, after_log
 
-from db import AbstractCache
-from core import Config
+from db.abstract_cache import AbstractCache
+from core.config import Config
 
 config = Config()
 
@@ -35,7 +35,7 @@ class RedisDB(AbstractCache):
            after=after_log(logger, logging.INFO),
            retry_error_callback=no_connection)
     async def get(self, user_id: str):
-        data = await self.redis.hgetall(name=user_id)
+        data = await self.redis.get(name=user_id)
         return data
 
     @retry(retry=retry_if_exception_type(ConnectionError),
@@ -52,8 +52,12 @@ class RedisDB(AbstractCache):
            stop=stop_after_delay(15),
            after=after_log(logger, logging.INFO),
            retry_error_callback=no_connection)
-    async def create_or_update(self, user_id: str, data: dict) -> None:
-        data = await self.redis.hset(name=user_id, mapping=data)
+    async def create(self, user_id: str, data: bytes) -> None:
+        data = await self.redis.set(name=user_id, value=data)
+        return data
+
+    async def update(self, user_id: str, data: bytes) -> None:
+        data = await self.create(name=user_id, mapping=data)
         return data
 
     @retry(retry=retry_if_exception_type(ConnectionError),

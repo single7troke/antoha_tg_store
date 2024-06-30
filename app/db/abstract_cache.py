@@ -11,7 +11,11 @@ class AbstractCache(ABC):
         pass
 
     @abstractmethod
-    def create_or_update(self):
+    def create(self):
+        pass
+
+    @abstractmethod
+    def update(self):
         pass
 
     @abstractmethod
