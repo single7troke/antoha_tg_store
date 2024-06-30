@@ -14,5 +14,10 @@ restart_dev_bot:
 
 build_dev:
 	docker image rm dev-bot
+	docker-compose -f config/dev/docker-compose.yml buildbuild_dev:
+
+rebuild:
+	docker image rm dev-bot
+	docker image rm dev-app
 	docker-compose -f config/dev/docker-compose.yml build
 
