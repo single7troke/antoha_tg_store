@@ -1,19 +1,22 @@
 from typing import Union
+from uuid import uuid4
 
 
 class CacheKeyConstructor:
     separator: str = ':::'
-    tg_id: str = 'tg_id'
-    payment_problems: str = 'payment_problems'
 
     @classmethod
-    def get_user_payment(cls, user_id: Union[int, str], payment_id: str):
-        return f'{user_id}{cls.separator}{payment_id}'
+    def user(cls, user_id: Union[int, str]):
+        return f'user{cls.separator}{user_id}'
 
     @classmethod
-    def tg_id_key(cls, user_id: Union[int, str]):
-        return f'{cls.tg_id}{cls.separator}{user_id}'
+    def payment(cls, user_id: Union[int, str], payment_id: str):
+        return f'payment{cls.separator}{user_id}{cls.separator}{payment_id}'
 
     @classmethod
-    def tg_id_payment_problems_key(cls, user_id: Union[int, str]):
-        return f'{cls.tg_id_key(user_id)}{cls.separator}{cls.payment_problems}'
+    def payment_issues(cls, user_id: Union[int, str]):
+        return f'payment_issues{cls.separator}{user_id}'
+
+    @classmethod
+    def link(cls, user_id: Union[int, str], course_id: int, course_part_id: int):
+        return f'link{cls.separator}{user_id}{cls.separator}{course_id}{cls.separator}{course_part_id}'
