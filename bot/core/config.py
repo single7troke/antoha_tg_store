@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -48,7 +49,10 @@ class Config(BaseSettings):
     web_app_url: str = "http://app:8000/api/v1/"
     # path_to_pem_file: str = "/etc/ssl/certs/YOURPUBLIC.pem"
     server_ip: str = ""
-    server_url: str = ""
+    server_url: str = 'http://127.0.0.1'
+    path_to_files: str = '/var/www/app/files'
+    secret_key: str
+    sales_start_dt: datetime
     buttons: Buttons = Buttons()
     bot: BotConfig = BotConfig()
     app: AppConfig = AppConfig()
@@ -61,11 +65,7 @@ config: Config | None = None
 
 
 def get_config() -> Config:
-    if not config:
-        init_config()
-    return config
-
-
-def init_config():
     global config
-    config = Config()
+    if not config:
+        config = Config()
+    return config

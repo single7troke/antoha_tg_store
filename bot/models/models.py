@@ -1,5 +1,5 @@
 from pydantic import BaseModel, PositiveInt
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
 
 class Base(BaseModel):
@@ -10,13 +10,18 @@ class Course(Base):
     name: str
     price: str
     description: Optional[str] = None
+    parts: Optional[Dict[int, str]] = None
 
 
 class UserCourse(BaseModel):
     course: Course
-    payment_link: str | None = None
-    payment_data: Optional[dict[Any, Any]] = None
+    payment_link: Optional[str] = None
+    payment_data: Optional[Dict[Any, Any]] = {}
 
 
 class User(BaseModel):
-    courses: dict[int, UserCourse] = dict()
+    courses: Dict[int, UserCourse] = dict()
+
+
+class Link(BaseModel):
+    created: int

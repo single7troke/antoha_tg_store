@@ -23,3 +23,12 @@ class CourseCallback(BaseCallback, prefix='course'):
 
 class PayButtonCallback(BaseCallback, prefix='pay'):
     pass
+
+
+class CoursePartCallback(BaseCallback, prefix='part'):
+    pass
+
+
+class DownloadPartCallback(BaseCallback, prefix='download'):
+    pass
+
