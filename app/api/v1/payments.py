@@ -1,15 +1,10 @@
 import pickle
-import time
-from http import HTTPStatus
 from typing import Any, Dict
 
-import requests
-from fastapi import APIRouter, Depends, HTTPException, Request
-from aioredis.exceptions import ConnectionError
+from fastapi import APIRouter, Depends, Request
 
 from db.redis import get_redis_db, RedisDB
 from core.cache_key_constructor import CacheKeyConstructor
-from models.models import User, UserCourse
 
 router = APIRouter()
 
@@ -21,7 +16,7 @@ async def payment_callback(data: Dict[Any, Any], cache: RedisDB = Depends(get_re
     print(payment_data)
     user_id = payment_data['metadata']['tg_user_id']
     course_id = int(payment_data['metadata']['course_id'])
-    key = CacheKeyConstructor.tg_id_key(user_id)
+    key = CacheKeyConstructor.user(user_id)
 
     user_from_cache = await cache.get(key)
     user_from_cache = pickle.loads(user_from_cache)
@@ -41,7 +36,7 @@ async def payment_callback(data: Dict[Any, Any], cache: RedisDB = Depends(get_re
 @router.get("", description="Return user's role if user exists, else False")
 async def get_user(request: Request, cache: RedisDB = Depends(get_redis_db)):
     print(cache.redis)
-    data = await cache.get('tg_id:::432093294')
+    data = await cache.get('key')
     data = pickle.loads(data)
 
     return {
