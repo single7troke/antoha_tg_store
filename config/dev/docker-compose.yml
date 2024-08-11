@@ -1,0 +1,55 @@
+services:
+  web:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+#      - /etc/ssl/private/PRIVATE.key:/etc/ssl/private/PRIVATE.key:ro
+#      - /etc/ssl/certs/PUBLIC.pem:/etc/ssl/certs/PUBLIC.pem:ro
+    ports:
+      - "80:80"
+#      - "443:443"
+    networks:
+      - antoha_store
+
+  redis:
+    image: "redis:alpine"
+    expose:
+      - "6379"
+    volumes:
+      - ../../redis_data:/data
+    networks:
+      - antoha_store
+
+  app:
+    user: "1000:1000"
+    build:
+      context: ../../app
+    volumes:
+      - ../../app:/app
+      - $DOWNLOAD_FILES:/var/www/app/download_files
+    env_file:
+      - .env
+    networks:
+      - antoha_store
+    command: python3 main.py
+
+  bot:
+    user: "1000:1000"
+    build:
+      context: ../../bot
+    volumes:
+      - ../../bot:/bot
+      - $DOWNLOAD_FILES:/var/www/app/files
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    networks:
+      - antoha_store
+    command: python3 main.py --no-webhook
+
+networks:
+  antoha_store:
+    name: antoha_store
+    external: false
