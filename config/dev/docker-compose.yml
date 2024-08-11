@@ -40,6 +40,7 @@ services:
       context: ../../bot
     volumes:
       - ../../bot:/bot
+      - $DOWNLOAD_FILES:/var/www/app/files
     env_file:
       - .env
     ports:
