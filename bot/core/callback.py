@@ -13,12 +13,12 @@ class BackButtonCallback(BaseCallback, prefix="back"):
     pass
 
 
-class CatalogCallback(BaseCallback, prefix='catalog'):
-    pass
-
-
 class CourseCallback(BaseCallback, prefix='course'):
     data: int
+
+
+class CoursePricesCallback(BaseCallback, prefix='course_prices'):
+    pass
 
 
 class PayButtonCallback(BaseCallback, prefix='pay'):

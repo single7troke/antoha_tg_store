@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+from typing import Dict
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,7 +10,10 @@ class Buttons(BaseSettings):
     back: str = '<- Назад'
     catalog: str = 'Каталог курсов'
     about: str = 'Обо мне'
-    buy: str = 'Купить'
+    buy: str = 'Купить за {price}'
+    prices: str = 'Расценки'
+    link_to_pay: str = 'Перейти к оплате'
+    course_type: Dict[str, str] = {'standard': 'Базовый курс', 'with_support': 'Курс с проверкой домашних заданий'}
 
 
 class BotConfig(BaseSettings):
@@ -53,6 +57,7 @@ class Config(BaseSettings):
     path_to_files: str = '/var/www/app/files'
     secret_key: str
     sales_start_dt: datetime
+    stop_selling_course_with_support_dt: datetime
     buttons: Buttons = Buttons()
     bot: BotConfig = BotConfig()
     app: AppConfig = AppConfig()

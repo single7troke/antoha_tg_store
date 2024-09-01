@@ -2,30 +2,31 @@ import logging
 import pickle
 import time
 
-from aiogram import types, Router
+from aiogram import types, Router, Bot
 from aiogram.filters import Command
 
 from core import *
 from db.redis import get_redis_db, RedisDB
 from models import User, UserCourse
-from core import info_messages
 
 router = Router()
 config = get_config()
 
 
 @router.message(Command(commands=('menu',)))
-async def main_menu(message: types.Message):
-    await message.answer(text=texts.menu,
-                         reply_markup=kb.user_main_menu_keyboard())
+async def main_menu(message: types.Message, bot: Bot):
+    response = await message.answer(
+        text=texts.menu,
+        reply_markup=kb.user_main_menu_keyboard()
+    )
+    await bot.delete_message(message.chat.id, response.message_id - 1)
+    await bot.delete_message(message.chat.id, response.message_id - 2)
 
 
 @router.callback_query(cb.MainMenuCallback.filter())
 async def main_menu_callback_handler(callback: types.CallbackQuery, callback_data: cb.MainMenuCallback):
     if callback_data.data == 'about':
         await about(callback.message)
-    elif callback_data.data == 'catalog':
-        await catalog(callback.message)
 
 
 @router.callback_query(cb.CourseCallback.filter())
@@ -36,65 +37,98 @@ async def selected_course_callback(
     cache: RedisDB = get_redis_db()
     user = callback.from_user
 
-    user_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
-    user_from_cache = pickle.loads(user_from_cache) if user_from_cache else None
-    if user_from_cache and (user_course := user_from_cache.courses.get(callback_data.data)):
-        if user_course.payment_data.get('status', False) == 'succeeded':
+    data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
+    user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
+    if user_from_cache:
+        user_course = user_from_cache.courses.get(callback_data.data)
+        if user_course.payed:
             print('Оплачен')
             text = texts.course_part_list.format(course_name=user_course.course.name)
             keyboard = kb.payed_course_keyboard(user_course.course)
-        elif user_course.payment_data.get('status', False) == 'canceled':
-            print('Проблема')
-            new_payment = create_payment(user_id=user.id, course=user_course)
-            user_course.payment_link = new_payment.confirmation.confirmation_url
-            user_course.payment_data = None
-            await cache.create(
-                CacheKeyConstructor.user(user_id=user.id),
-                pickle.dumps(user_from_cache)
-            )
-
-            user_payment_problems = await cache.get(CacheKeyConstructor.payment_issues(user_id=user.id))
-            user_payment_problems = pickle.loads(user_from_cache) if user_payment_problems else list()
-            user_payment_problems.append(user_course.payment_data)
-            await cache.create(
-                CacheKeyConstructor.payment_issues(user_id=user.id),
-                pickle.dumps(user_payment_problems)
-            )
-
-            text = info_messages.canceled
-            keyboard = kb.selected_course_keyboard(user_course.payment_link)
-
         else:
             print('Еще не оплачен')
-            text = texts.course_description.format(
-                description=user_course.course.description,
-                price=user_course.course.price[:-3]
-            )
-            keyboard = kb.selected_course_keyboard(user_course.payment_link)
+            text = texts.course_description.format(description=user_course.course.description)
+            keyboard = kb.course_keyboard()
     else:
-        course = utils.COURSES.get(callback_data.data)
-        payment = create_payment(user_id=user.id, course=course)
-        if user_from_cache:
-            print('Есть какие-то курсы в каком-то статусе, но этого нет')
-            user_from_cache.courses[course.id] = UserCourse(
-                course=course, payment_link=payment.confirmation.confirmation_url
-            )
-            data_to_cache = user_from_cache
-        else:
-            print('Вообще новый юзер')
-            data_to_cache = User(
-                courses={course.id: UserCourse(course=course, payment_link=payment.confirmation.confirmation_url)}
-            )
+        course = utils.COURSE
+        print(str(callback_data.data) + '---------------------------------------')
+        print('Вообще новый юзер')
+        data_to_cache = User(
+            courses={course.id: UserCourse(course=course)}
+        )
         await cache.create(
             CacheKeyConstructor.user(user_id=user.id),
             pickle.dumps(data_to_cache)
         )
-        text = texts.course_description.format(description=course.description, price=course.price[:-3])
-        keyboard = kb.selected_course_keyboard(payment['confirmation']['confirmation_url'])
+        text = texts.course_description.format(description=course.description)
+        keyboard = kb.course_keyboard()
 
     await callback.message.edit_text(
         text=text,
         reply_markup=keyboard
+    )
+
+
+@router.callback_query(cb.CoursePricesCallback.filter())
+async def selected_course_prices_callback(
+        callback: types.CallbackQuery,
+        callback_data: cb.CoursePricesCallback,
+):
+    await callback.message.edit_text(
+        text=texts.prices_description.format(
+            basic_price=utils.COURSE.prices['basic'][:-3],
+            extended_price=utils.COURSE.prices['extended'][:-3]
+        ),
+        reply_markup=kb.selected_course_prices_keyboard(utils.COURSE.prices)
+    )
+
+
+@router.callback_query(cb.PayButtonCallback.filter())
+async def pay_button_callback(
+        callback: types.CallbackQuery,
+        callback_data: cb.CoursePartCallback
+):
+    cache: RedisDB = get_redis_db()
+    price_type = callback_data.data
+    user = callback.from_user
+
+    data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
+    user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
+
+    if payment_data := user_from_cache.courses.get(utils.COURSE.id).payments_data.get(price_type, False) == 'canceled':
+        user_payment_problems = await cache.get(CacheKeyConstructor.payment_issues(user_id=user.id))
+        user_payment_problems = pickle.loads(user_from_cache) if user_payment_problems else list()
+        user_payment_problems.append(payment_data)
+        await cache.create(
+            CacheKeyConstructor.payment_issues(user_id=user.id),
+            pickle.dumps(user_payment_problems)
+        )
+        payment_info = create_payment(user.id, utils.COURSE, price_type)
+        payment_link = payment_info.confirmation.confirmation_url
+
+        user_from_cache.courses.get(utils.COURSE.id).payments_data[price_type] = None
+        user_from_cache.courses.get(utils.COURSE.id).payment_links[price_type] = payment_link
+        await cache.create(
+            CacheKeyConstructor.user(user_id=user.id),
+            pickle.dumps(user_from_cache)
+        )
+
+    elif not user_from_cache.courses.get(utils.COURSE.id).payment_links.get(price_type):
+        payment_info = create_payment(user.id, utils.COURSE, price_type)
+        payment_link = payment_info.confirmation.confirmation_url
+        user_from_cache.courses.get(utils.COURSE.id).payment_links[price_type] = payment_link
+        await cache.create(
+            CacheKeyConstructor.user(user_id=user.id),
+            pickle.dumps(user_from_cache)
+        )
+    else:
+        payment_link = user_from_cache.courses.get(utils.COURSE.id).payment_links.get(price_type)
+
+    await callback.message.edit_text(
+        text=texts.chosen_course.format(
+            course_name='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий'
+        ),
+        reply_markup=kb.pay_course_keyboard(payment_link)
     )
 
 
@@ -105,7 +139,7 @@ async def selected_part_callback(
 ):
     print(callback_data.data)
     course_id, part_id = utils.get_course_id_and_course_part_id(callback_data.data)
-    course = utils.COURSES.get(course_id)
+    course = utils.COURSE
 
     await callback.message.edit_text(
         text=texts.selected_part.format(
@@ -126,7 +160,7 @@ async def download_part_callback(
     course_id, part_id = utils.get_course_id_and_course_part_id(
         callback_data.data.replace('course_part_', '')
     )
-    course = utils.COURSES.get(course_id)
+    course = utils.COURSE
     link_key = cache_key_constructor.CacheKeyConstructor.link(callback.from_user.id, course.id, part_id)
     data_from_cache = await cache.get(link_key)
     data_from_cache = pickle.loads(data_from_cache) if data_from_cache else None
@@ -165,16 +199,21 @@ async def catalog(message: types.Message):
 
 @router.callback_query(cb.BackButtonCallback.filter())
 async def back_button_callback(callback: types.CallbackQuery, callback_data: cb.BackButtonCallback):
-    logging.info(f'Back button, callback data: {callback_data.data}')
+    print(f'Back button, callback data: {callback_data.data}')
     if callback_data.data == 'menu':
-        await callback.message.edit_text(text=texts.menu, reply_markup=kb.user_main_menu_keyboard())
-    elif callback_data.data == 'catalog':
-        await catalog(callback.message)
+        await callback.message.edit_text(
+            text=texts.menu, reply_markup=kb.user_main_menu_keyboard()
+        )
+    elif callback_data.data == 'course':
+        await callback.message.edit_text(
+            text=texts.course_description.format(description=utils.COURSE.description),
+            reply_markup=kb.course_keyboard()
+        )
     elif 'payed_course' in callback_data.data:
         course_id = utils.get_course_id_and_course_part_id(
             callback_data.data.replace('payed_course_', '')
         )[0]
-        course = utils.COURSES.get(course_id)
+        course = utils.COURSE
         await callback.message.edit_text(
             text=texts.course_part_list.format(course_name=course.name),
             reply_markup=kb.payed_course_keyboard(course)
@@ -183,7 +222,7 @@ async def back_button_callback(callback: types.CallbackQuery, callback_data: cb.
         course_id, part_id = utils.get_course_id_and_course_part_id(
             callback_data.data.replace('course_part_', '')
         )
-        course = utils.COURSES.get(course_id)
+        course = utils.COURSE
         await callback.message.edit_text(
             text=texts.selected_part.format(
                 course_name=course.name, part_id=part_id, description=course.parts[part_id]

@@ -1,10 +1,11 @@
 import base64
 import json
+import pickle
 from typing import List, Dict
 
 from cryptography.fernet import Fernet
 
-from models.models import Course
+from models.models import Course, CourseOption, User
 from .config import get_config
 
 config = get_config()
@@ -36,13 +37,28 @@ def get_course_id_and_course_part_id(s: str) -> List[int]:
     return [int(i) for i in s.split('---')]
 
 
-def load_courses_from_descriptor() -> Dict[int, Course]:
-    data = {}
+def bytes_to_user(data: bytes) -> User:
+    user = pickle.loads(data)
+    return user
+
+
+def load_course_from_descriptor() -> Course:
     with open(f'{config.path_to_files}/course_descriptor.json', 'r') as file:
-        for k, v in json.load(file).items():
-            data[int(k)] = Course(id=v['id'], name=v['name'], price=v['price'], description=v['description'],
-                                  parts={int(i): j for i, j in v['parts'].items() if v['parts']})
-        return data
+        data = json.load(file)
+        course = Course(
+            id=data['id'],
+            name=data['name'],
+            prices=data['prices'],
+            description=data['description'],
+            parts=data['parts'],
+            options=[CourseOption(
+                name=option['name'],
+                price=option['price'],
+                payed=option['payed'],
+                description=option['description']
+            ) for option in data['options']]
+        )
+        return course
 
 
-COURSES = load_courses_from_descriptor()
+COURSE = load_course_from_descriptor()

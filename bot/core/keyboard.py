@@ -1,4 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from typing import Union
 
 from core import get_config, texts, utils
 from .callback import *
@@ -8,9 +9,10 @@ config = get_config()
 
 
 def user_main_menu_keyboard():
+    course = utils.COURSE
     buttons = [
         [InlineKeyboardButton(text=config.buttons.about, callback_data=MainMenuCallback(data="about").pack())],
-        [InlineKeyboardButton(text=config.buttons.catalog, callback_data=MainMenuCallback(data="catalog").pack())]
+        [InlineKeyboardButton(text=course.name, callback_data=CourseCallback(data=course.id).pack())]
     ]
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -29,7 +31,7 @@ def back_button(callback_data):
 
 
 def catalog_keyboard():
-    courses = utils.COURSES
+    courses = utils.COURSE
 
     buttons = [
         [InlineKeyboardButton(text=course.name, callback_data=CourseCallback(data=course.id).pack())]
@@ -42,12 +44,37 @@ def catalog_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def selected_course_keyboard(payment_link):
+def course_keyboard():
     buttons = [
-        [InlineKeyboardButton(text=config.buttons.buy, url=payment_link)],
-        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='catalog').pack())]
+        [InlineKeyboardButton(text=config.buttons.prices, callback_data=CoursePricesCallback(data='prices').pack())],
+        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='menu').pack())]
     ]
 
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def selected_course_prices_keyboard(prices: dict):
+    buttons = list()
+    print(prices)
+
+    for course_type, price in prices.items():
+        buttons.append(
+            [InlineKeyboardButton(
+                text=config.buttons.buy.format(price=price[:-3]),
+                callback_data=PayButtonCallback(data=course_type).pack())]
+        )
+
+    buttons.append(
+        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='course').pack())]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def pay_course_keyboard(payment_link: str):
+    buttons = [
+        [InlineKeyboardButton(text=config.buttons.link_to_pay, url=payment_link)],
+        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='course').pack())]
+    ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
