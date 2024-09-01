@@ -20,6 +20,12 @@ class DB(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='db_')
 
 
+class Payment(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix='pay_')
+    yookassa_account_id: int
+    yookassa_secret_key: str
+
+
 class Config(BaseSettings):
     log_lvl: int = logging.INFO
     base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,6 +36,7 @@ class Config(BaseSettings):
     app: AppConfig = AppConfig()
     db: DB = DB()
     cache: Cache = Cache()
+    payment: Payment = Payment()
 
 
 config: Config | None = None
