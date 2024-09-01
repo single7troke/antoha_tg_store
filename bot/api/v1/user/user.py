@@ -83,7 +83,7 @@ async def selected_course_prices_callback(
     )
 
 
-@router.callback_query(cb.PayButtonCallback.filter())
+@router.callback_query(cb.PayButtonCallback.filter())  # TODO отслеживать время создания платежа и создавать новый если время вышло
 async def pay_button_callback(
         callback: types.CallbackQuery,
         callback_data: cb.CoursePartCallback

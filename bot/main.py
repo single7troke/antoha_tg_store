@@ -92,7 +92,6 @@ if __name__ == '__main__':
     dp = Dispatcher()
     dp.message.register(welcome, Command(commands=["start"]))
     # dp.message.register(admin_description, Command(commands=["admin"]))
-    # dp.include_router(google_calendar.router)
     dp.include_router(user_router)
     # dp.message.middleware(AdminAccessMiddleware())
     # dp.message.outer_middleware(UserAccessMiddleware())
@@ -102,7 +101,7 @@ if __name__ == '__main__':
         logging.info("Run webhook")
         dp.startup.register(webhook_setup)
         app = web.Application()
-        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/calendar_bot")
+        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/best_bass_webhook")
         setup_application(app, dp, bot=bot)
         web.run_app(app)
     else:

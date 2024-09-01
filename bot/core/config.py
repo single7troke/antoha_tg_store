@@ -51,7 +51,7 @@ class Config(BaseSettings):
     admin_roles: list = ["admin", "superuser"]
     base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     web_app_url: str = "http://app:8000/api/v1/"
-    # path_to_pem_file: str = "/etc/ssl/certs/YOURPUBLIC.pem"
+    path_to_pem_file: str = "/etc/ssl/certs/public.pem"
     server_ip: str = ""
     server_url: str = 'http://127.0.0.1'
     path_to_files: str = '/var/www/app/files'
