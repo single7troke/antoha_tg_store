@@ -30,8 +30,9 @@ def create_payment(user_id: Union[str, int], course: Course, price_type: str) ->
         "description": f"Заказ № {ts}",
         'metadata': {
             'tg_user_id': str(user_id),
-            'payment_type': str(price_type),
-            'ts': str(ts)
+            'price_type': str(price_type),
+            'ts': str(ts),
+            'course_id': str(course.id)
         }
     }, u_id)
 
