@@ -3,6 +3,8 @@ import json
 import pickle
 from typing import List, Dict
 
+from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
 from cryptography.fernet import Fernet
 
 from models.models import Course, CourseOption, User
@@ -42,6 +44,15 @@ def bytes_to_user(data: bytes) -> User:
     return user
 
 
+async def clear_messages(bot: Bot, chat_id: int, message_id: int) -> None:
+    while True:
+        try:
+            await bot.delete_message(chat_id, message_id)
+            message_id -= 1
+        except TelegramBadRequest:
+            return
+
+
 def load_course_from_descriptor() -> Course:
     with open(f'{config.path_to_files}/course_descriptor.json', 'r') as file:
         data = json.load(file)
@@ -61,4 +72,4 @@ def load_course_from_descriptor() -> Course:
         return course
 
 
-COURSE = load_course_from_descriptor()
+COURSE = load_course_from_descriptor() # TODO переделать
