@@ -61,12 +61,29 @@ def selected_course_prices_keyboard(prices: dict):
         buttons.append(
             [InlineKeyboardButton(
                 text=config.buttons.buy.format(price=price[:-3]),
-                callback_data=PayButtonCallback(data=course_type).pack())]
+                callback_data=CheckEmailCallback(data=course_type).pack()
+            )]
         )
 
     buttons.append(
         [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='course').pack())]
     )
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def enter_or_confirm_email_keyboard(course_type, enter_email):
+    if enter_email:
+        buttons = [
+            [InlineKeyboardButton(text=config.buttons.enter_email, callback_data=EnterEmailCallback(data=course_type).pack())],
+            [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='course').pack())]
+        ]
+        return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    buttons = [
+        [InlineKeyboardButton(text=config.buttons.change_email, callback_data=EnterEmailCallback(data=course_type).pack())],
+        [InlineKeyboardButton(text=config.buttons.next, callback_data=PayButtonCallback(data=course_type).pack())],
+        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='course').pack())]
+    ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 

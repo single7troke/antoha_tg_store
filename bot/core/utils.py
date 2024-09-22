@@ -6,6 +6,7 @@ from typing import List, Dict
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 from cryptography.fernet import Fernet
+from email_validator import validate_email, EmailNotValidError
 
 from models.models import Course, CourseOption, User
 from .config import get_config
@@ -52,6 +53,13 @@ async def clear_messages(bot: Bot, chat_id: int, message_id: int) -> None:
         except TelegramBadRequest:
             return
 
+
+def is_valid_email(email: str) -> bool:
+    try:
+        valid = validate_email(email)
+        return True
+    except EmailNotValidError as e:
+        return False
 
 def load_course_from_descriptor() -> Course:
     with open(f'{config.path_to_files}/course_descriptor.json', 'r') as file:

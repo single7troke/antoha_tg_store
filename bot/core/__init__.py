@@ -5,3 +5,4 @@ from . import keyboard as kb
 from . import utils
 from .payments import create_payment
 from .cache_key_constructor import CacheKeyConstructor
+from . import form

@@ -4,6 +4,7 @@ import time
 
 from aiogram import types, Router, Bot
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 
 from core import *
 from db.redis import get_redis_db, RedisDB
@@ -14,13 +15,12 @@ config = get_config()
 
 
 @router.message(Command(commands=('menu',)))
-async def main_menu(message: types.Message, bot: Bot):
+async def main_menu(message: types.Message):
     response = await message.answer(
         text=texts.menu,
         reply_markup=kb.user_main_menu_keyboard()
     )
-    await bot.delete_message(message.chat.id, response.message_id - 1)
-    await bot.delete_message(message.chat.id, response.message_id - 2)
+    await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
 
 
 @router.callback_query(cb.MainMenuCallback.filter())
@@ -77,16 +77,57 @@ async def selected_course_prices_callback(
     await callback.message.edit_text(
         text=texts.prices_description.format(
             basic_price=utils.COURSE.prices['basic'][:-3],
-            extended_price=utils.COURSE.prices['extended'][:-3]
+            extended_price=utils.COURSE.prices['extended'][:-3]  # TODO это тоже хардкод, расценок может быть больше
         ),
         reply_markup=kb.selected_course_prices_keyboard(utils.COURSE.prices)
     )
 
 
-@router.callback_query(cb.PayButtonCallback.filter())  # TODO отслеживать время создания платежа и создавать новый если время вышло
-async def pay_button_callback(
+@router.callback_query(cb.EnterEmailCallback.filter())
+async def enter_email_callback(
         callback: types.CallbackQuery,
-        callback_data: cb.CoursePartCallback
+        callback_data: cb.EnterEmailCallback,
+        state: FSMContext
+):
+    await state.set_state(form.Email.email)
+    await state.update_data(price_type=callback_data.data)
+    await callback.message.edit_text(
+        text=texts.email_need,
+        reply_markup=kb.back_button('course')
+    )
+
+
+@router.message(form.Email.email)
+async def email_form(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    email = message.text
+    if utils.is_valid_email(email):
+        cache: RedisDB = get_redis_db()
+        user = message.from_user
+        data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
+        user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
+        user_from_cache.email = email
+        await cache.create(
+            CacheKeyConstructor.user(user_id=user.id),
+            pickle.dumps(user_from_cache)
+        )
+        response = await message.answer(
+            text=texts.email_new.format(email=email),
+            reply_markup=kb.enter_or_confirm_email_keyboard(data.get('price_type'), enter_email=False)
+        )
+    else:
+        response = await message.answer(
+            text=texts.email_error.format(email=email),
+            reply_markup=kb.enter_or_confirm_email_keyboard(data.get('price_type'), enter_email=True)
+        )
+    await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
+
+
+@router.callback_query(cb.CheckEmailCallback.filter())
+async def check_email_callback(
+        callback: types.CallbackQuery,
+        callback_data: cb.CheckEmailCallback,
+        state: FSMContext
 ):
     cache: RedisDB = get_redis_db()
     price_type = callback_data.data
@@ -94,6 +135,35 @@ async def pay_button_callback(
 
     data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
+
+    if not user_from_cache.email:
+        await callback.message.edit_text(
+            text=texts.email_need,
+            reply_markup=kb.enter_or_confirm_email_keyboard(price_type, enter_email=True)
+        )
+    else:
+        await callback.message.edit_text(
+            text=texts.email_got.format(email=user_from_cache.email),
+            reply_markup=kb.enter_or_confirm_email_keyboard(price_type, enter_email=False)
+        )
+
+
+@router.callback_query(cb.PayButtonCallback.filter())  # TODO отслеживать время создания платежа и создавать новый если время вышло
+async def pay_button_callback(
+        callback: types.CallbackQuery,
+        callback_data: cb.CoursePartCallback,
+        state: FSMContext
+):
+    #  TODO нужно проверять какое мыло указано в уже созданном платеже и если указан новый то создавать новый платеж или продумать систему проверки
+    await state.clear()
+    cache: RedisDB = get_redis_db()
+    price_type = callback_data.data
+    user = callback.from_user
+
+    data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
+    user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
+    payment_data = user_from_cache.courses.get(utils.COURSE.id).payments_data
+    print(payment_data)
 
     if payment_data := user_from_cache.courses.get(utils.COURSE.id).payments_data.get(price_type, False) == 'canceled':
         user_payment_problems = await cache.get(CacheKeyConstructor.payment_issues(user_id=user.id))
@@ -103,7 +173,7 @@ async def pay_button_callback(
             CacheKeyConstructor.payment_issues(user_id=user.id),
             pickle.dumps(user_payment_problems)
         )
-        payment_info = create_payment(user.id, utils.COURSE, price_type)
+        payment_info = create_payment(user.id, utils.COURSE, price_type)  # TODO нужно добавить мыло в формирование платежа
         payment_link = payment_info.confirmation.confirmation_url
 
         user_from_cache.courses.get(utils.COURSE.id).payments_data[price_type] = None
@@ -114,7 +184,7 @@ async def pay_button_callback(
         )
 
     elif not user_from_cache.courses.get(utils.COURSE.id).payment_links.get(price_type):
-        payment_info = create_payment(user.id, utils.COURSE, price_type)
+        payment_info = create_payment(user.id, utils.COURSE, price_type)  # TODO нужно добавить мыло в формирование платежа
         payment_link = payment_info.confirmation.confirmation_url
         user_from_cache.courses.get(utils.COURSE.id).payment_links[price_type] = payment_link
         await cache.create(
@@ -198,8 +268,14 @@ async def catalog(message: types.Message):
 
 
 @router.callback_query(cb.BackButtonCallback.filter())
-async def back_button_callback(callback: types.CallbackQuery, callback_data: cb.BackButtonCallback):
+async def back_button_callback(
+        callback: types.CallbackQuery,
+        callback_data: cb.BackButtonCallback,
+        state: FSMContext
+):
     print(f'Back button, callback data: {callback_data.data}')
+    await state.clear()
+
     if callback_data.data == 'menu':
         await callback.message.edit_text(
             text=texts.menu, reply_markup=kb.user_main_menu_keyboard()
@@ -229,3 +305,5 @@ async def back_button_callback(callback: types.CallbackQuery, callback_data: cb.
             ),
             reply_markup=kb.selected_part_keyboard(course, part_id)
         )
+
+    await utils.clear_messages(callback.bot, callback.message.chat.id, callback.message.message_id - 1)

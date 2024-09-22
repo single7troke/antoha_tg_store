@@ -33,6 +33,7 @@ class UserCourse(BaseModel):
 
 class User(BaseModel):
     courses: Dict[int, UserCourse] = dict()
+    email: Optional[str] = None
 
 
 class Link(BaseModel):

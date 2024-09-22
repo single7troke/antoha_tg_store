@@ -32,3 +32,11 @@ class CoursePartCallback(BaseCallback, prefix='part'):
 class DownloadPartCallback(BaseCallback, prefix='download'):
     pass
 
+
+class CheckEmailCallback(BaseCallback, prefix='check_email'):
+    pass
+
+
+class EnterEmailCallback(BaseCallback, prefix='confirm_email'):
+    pass
+
