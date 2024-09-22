@@ -90,7 +90,7 @@ def enter_or_confirm_email_keyboard(course_type, enter_email):
 def pay_course_keyboard(payment_link: str):
     buttons = [
         [InlineKeyboardButton(text=config.buttons.link_to_pay, url=payment_link)],
-        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='course').pack())]
+        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='menu').pack())]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -106,7 +106,7 @@ def payed_course_keyboard(course: Course):
     ]
 
     buttons.append(
-        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='catalog').pack())]
+        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='menu').pack())]
     )
     print(buttons)
 
