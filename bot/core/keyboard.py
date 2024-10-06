@@ -1,5 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from typing import Union
+from typing import Union, Optional
 
 from core import get_config, texts, utils
 from .callback import *
@@ -95,7 +95,7 @@ def pay_course_keyboard(payment_link: str):
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def payed_course_keyboard(course: Course):
+def payed_course_keyboard(course: Course, invite_link: Optional[str] = None):
     buttons = [
         [
             InlineKeyboardButton(
@@ -108,8 +108,11 @@ def payed_course_keyboard(course: Course):
     buttons.append(
         [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='menu').pack())]
     )
-    print(buttons)
 
+    if invite_link:
+        buttons.insert(
+            0,
+            [InlineKeyboardButton(text='Перейти в группу', url=invite_link)])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 

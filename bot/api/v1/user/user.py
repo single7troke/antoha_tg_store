@@ -51,28 +51,30 @@ async def selected_course_callback(
         if user_course.payed:
             print('Оплачен')
             text = texts.course_part_list.format(course_name=user_course.course.name)
-            keyboard = kb.payed_course_keyboard(user_course.course)
-            if not user_from_cache.invite_link:
+
+            if user_course.payed == 'extended' and not user_from_cache.invite_link:
                 invite_link = await callback.bot.create_chat_invite_link(
                     chat_id=config.bot.group_id,
                     member_limit=1,
                 )
                 user_from_cache.invite_link = invite_link.invite_link
                 await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
-            if user_course.payed == 'extended':
-                text += texts.invite_link_text.format(link=user_from_cache.invite_link)
+
+            keyboard = kb.payed_course_keyboard(user_course.course, user_from_cache.invite_link)
+
         elif course_type := utils.course_already_payed(user_from_cache):
             print('Оплачен, но колбек почему-то не сработал')
             user_from_cache.courses.get(callback_data.data).payed = course_type
             text = texts.course_part_list.format(course_name=user_course.course.name)
-            keyboard = kb.payed_course_keyboard(user_course.course)
+
             if course_type == 'extended':
                 invite_link = await callback.bot.create_chat_invite_link(
                     chat_id=config.bot.group_id,
                     member_limit=1,
                 )
                 user_from_cache.invite_link = invite_link.invite_link
-                text += texts.invite_link_text.format(link=user_from_cache.invite_link)
+
+            keyboard = kb.payed_course_keyboard(user_course.course, user_from_cache.invite_link)
             await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
         else:
             print('Еще не оплачен')
@@ -346,6 +348,9 @@ async def back_button_callback(
 ):
     print(f'Back button, callback data: {callback_data.data}')
     await state.clear()
+    cache = get_redis_db()
+    data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=callback.message.from_user.id))
+    user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
     from_id = callback.message.message_id - 1
 
     if callback_data.data == 'menu':
@@ -362,7 +367,7 @@ async def back_button_callback(
         course = utils.COURSE
         await callback.message.edit_caption(
             caption=texts.course_part_list.format(course_name=course.name),
-            reply_markup=kb.payed_course_keyboard(course)
+            reply_markup=kb.payed_course_keyboard(course, user_from_cache.invite_link)
         )
     elif 'course_part' in callback_data.data:
         course_id, part_id = utils.get_course_id_and_course_part_id(
