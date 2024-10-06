@@ -2,10 +2,10 @@ import logging
 import pickle
 import time
 
-from aiogram import types, Router, Bot
+from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InputFile, FSInputFile
+from aiogram.types import FSInputFile
 
 from core import *
 from db.redis import get_redis_db, RedisDB
