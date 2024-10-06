@@ -27,13 +27,13 @@ class Course(Base):
 class UserCourse(BaseModel):
     course: Course
     payed: bool = False
-    payment_links: Optional[dict[str, Optional[str]]] = {}
-    payments_data: Optional[Dict[str, Optional[Dict[Any, Any]]]] = {}
+    payment_ids: Dict[str, Optional[str]] = dict()
 
 
 class User(BaseModel):
     courses: Dict[int, UserCourse] = dict()
     email: Optional[str] = None
+    invite_link: Optional[str] = None
 
 
 class Link(BaseModel):

@@ -128,13 +128,15 @@ def selected_part_keyboard(course: Course, part_id: int):
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def link_to_download_part_keyboard(link_key: str, course_id, part_id):
+def link_to_download_part_keyboard(link_key: str, course_id, part_id, back_to_menu=False):
     url = utils.get_download_link(link_key)
     buttons = [
         [InlineKeyboardButton(text=texts.link_button_text, url=url)],
         [InlineKeyboardButton(
             text=config.buttons.back,
-            callback_data=BackButtonCallback(data=f'course_part_{course_id}---{part_id}').pack()
+            callback_data=BackButtonCallback(
+                data=f'course_part_{course_id}---{part_id}' if not back_to_menu else f'payed_course_{course_id}---{part_id}'
+            ).pack()
         )]
     ]
 

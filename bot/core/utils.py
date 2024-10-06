@@ -10,6 +10,7 @@ from email_validator import validate_email, EmailNotValidError
 
 from models.models import Course, CourseOption, User
 from .config import get_config
+from .payments import get_payment
 
 config = get_config()
 
@@ -60,6 +61,13 @@ def is_valid_email(email: str) -> bool:
         return True
     except EmailNotValidError as e:
         return False
+
+
+def course_already_payed(user: User):
+    for course_type, payment_id in user.courses[COURSE.id].payment_ids.items():
+        if get_payment(payment_id).status == 'succeeded':
+            return course_type
+
 
 def load_course_from_descriptor() -> Course:
     with open(f'{config.path_to_files}/course_descriptor.json', 'r') as file:

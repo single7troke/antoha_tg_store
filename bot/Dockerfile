@@ -3,4 +3,5 @@ ENV PYTHONUNBUFFERED 1
 COPY ./ /bot
 WORKDIR /bot
 
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt --no-cache-dir

@@ -13,6 +13,7 @@ from models import User, UserCourse
 router = Router()
 config = get_config()
 
+# TODO убрать принты, добавить логи
 
 @router.message(Command(commands=('menu',)))
 async def main_menu(message: types.Message):
@@ -45,13 +46,34 @@ async def selected_course_callback(
             print('Оплачен')
             text = texts.course_part_list.format(course_name=user_course.course.name)
             keyboard = kb.payed_course_keyboard(user_course.course)
+            if not user_from_cache.invite_link:
+                invite_link = await callback.bot.create_chat_invite_link(
+                    chat_id=config.bot.group_id,
+                    member_limit=1,
+                )
+                user_from_cache.invite_link = invite_link.invite_link
+                await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
+            if user_course.payed == 'extended':
+                text += texts.invite_link_text.format(link=user_from_cache.invite_link)
+        elif course_type := utils.course_already_payed(user_from_cache):
+            print('Оплачен, но колбек почему-то не сработал')
+            user_from_cache.courses.get(callback_data.data).payed = course_type
+            text = texts.course_part_list.format(course_name=user_course.course.name)
+            keyboard = kb.payed_course_keyboard(user_course.course)
+            if course_type == 'extended':
+                invite_link = await callback.bot.create_chat_invite_link(
+                    chat_id=config.bot.group_id,
+                    member_limit=1,
+                )
+                user_from_cache.invite_link = invite_link.invite_link
+                text += texts.invite_link_text.format(link=user_from_cache.invite_link)
+            await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
         else:
             print('Еще не оплачен')
             text = texts.course_description.format(description=user_course.course.description)
             keyboard = kb.course_keyboard()
     else:
         course = utils.COURSE
-        print(str(callback_data.data) + '---------------------------------------')
         print('Вообще новый юзер')
         data_to_cache = User(
             courses={course.id: UserCourse(course=course)}
@@ -92,7 +114,7 @@ async def enter_email_callback(
     await state.set_state(form.Email.email)
     await state.update_data(price_type=callback_data.data)
     await callback.message.edit_text(
-        text=texts.email_need,
+        text=texts.email_instruction,
         reply_markup=kb.back_button('course')
     )
 
@@ -154,7 +176,6 @@ async def pay_button_callback(
         callback_data: cb.CoursePartCallback,
         state: FSMContext
 ):
-    #  TODO нужно проверять какое мыло указано в уже созданном платеже и если указан новый то создавать новый платеж или продумать систему проверки
     await state.clear()
     cache: RedisDB = get_redis_db()
     price_type = callback_data.data
@@ -162,41 +183,48 @@ async def pay_button_callback(
 
     data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
-    payment_data = user_from_cache.courses.get(utils.COURSE.id).payments_data
-    print(payment_data)
+    payment_id = user_from_cache.courses.get(utils.COURSE.id).payment_ids.get(price_type, None)
+    payment_data = get_payment(payment_id) if payment_id else None
 
-    if payment_data := user_from_cache.courses.get(utils.COURSE.id).payments_data.get(price_type, False) == 'canceled':
+    payment_link = None
+
+    if not payment_data or user_from_cache.email != payment_data.metadata.get('email'):
+        order_number = await cache.increase('order_number')
+        # TODO передавать в create_payment пользователя(user.dict()) и там уже в metadata сохранять данные(не только id)
+        new_payment = create_payment(user.id, utils.COURSE, price_type, user_from_cache.email, order_number)
+        payment_link = new_payment.confirmation.confirmation_url
+        user_from_cache.courses.get(utils.COURSE.id).payment_ids[price_type] = new_payment.id
+        await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
+    elif payment_data.status == 'pending':
+        payment_link = payment_data.confirmation.confirmation_url
+    elif payment_data.status == 'canceled':
         user_payment_problems = await cache.get(CacheKeyConstructor.payment_issues(user_id=user.id))
         user_payment_problems = pickle.loads(user_from_cache) if user_payment_problems else list()
-        user_payment_problems.append(payment_data)
+        user_payment_problems.append(payment_id)
         await cache.create(
             CacheKeyConstructor.payment_issues(user_id=user.id),
             pickle.dumps(user_payment_problems)
         )
-        payment_info = create_payment(user.id, utils.COURSE, price_type)  # TODO нужно добавить мыло в формирование платежа
-        payment_link = payment_info.confirmation.confirmation_url
+        order_number = await cache.increase('order_number')
+        new_payment = create_payment(user.id, utils.COURSE, price_type, user_from_cache.email, order_number)
+        payment_link = new_payment.confirmation.confirmation_url
 
-        user_from_cache.courses.get(utils.COURSE.id).payments_data[price_type] = None
-        user_from_cache.courses.get(utils.COURSE.id).payment_links[price_type] = payment_link
+        user_from_cache.courses.get(utils.COURSE.id).payment_ids[price_type] = new_payment.id
         await cache.create(
             CacheKeyConstructor.user(user_id=user.id),
             pickle.dumps(user_from_cache)
         )
 
-    elif not user_from_cache.courses.get(utils.COURSE.id).payment_links.get(price_type):
-        payment_info = create_payment(user.id, utils.COURSE, price_type)  # TODO нужно добавить мыло в формирование платежа
-        payment_link = payment_info.confirmation.confirmation_url
-        user_from_cache.courses.get(utils.COURSE.id).payment_links[price_type] = payment_link
-        await cache.create(
-            CacheKeyConstructor.user(user_id=user.id),
-            pickle.dumps(user_from_cache)
+    if not payment_link:
+        await callback.message.edit_text(
+            text='Error',  # TODO сделать текст ошибки если платеж неудалось создать
+            reply_markup=kb.back_button('menu')
         )
-    else:
-        payment_link = user_from_cache.courses.get(utils.COURSE.id).payment_links.get(price_type)
+        return
 
     await callback.message.edit_text(
         text=texts.chosen_course.format(
-            course_name='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий'
+            course_name='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий\"'
         ),
         reply_markup=kb.pay_course_keyboard(payment_link)
     )
@@ -208,8 +236,30 @@ async def selected_part_callback(
         callback_data: cb.CoursePartCallback
 ):
     print(callback_data.data)
+    cache: RedisDB = get_redis_db()
     course_id, part_id = utils.get_course_id_and_course_part_id(callback_data.data)
     course = utils.COURSE
+
+    link_key = cache_key_constructor.CacheKeyConstructor.link(callback.from_user.id, course.id, part_id)
+    data_from_cache = await cache.get(link_key)
+    data_from_cache = pickle.loads(data_from_cache) if data_from_cache else None
+    if data_from_cache:
+        seconds = 24 * 60 * 60 - (int(time.time() - data_from_cache['created']))
+        if seconds > 0:
+            remaining_time = utils.remaining_time(seconds)
+            text = texts.link_description.format(time=remaining_time)
+
+            await callback.message.edit_text(
+                text=text,
+                reply_markup=kb.link_to_download_part_keyboard(link_key, course.id, part_id, back_to_menu=True)
+            )
+            return
+        else:
+            await callback.message.edit_text(
+                text='Время вышло',  # TODO добавить текст
+                reply_markup=kb.back_button('course')
+            )
+            return
 
     await callback.message.edit_text(
         text=texts.selected_part.format(
@@ -253,7 +303,7 @@ async def download_part_callback(
 
 
 async def about(message: types.Message):
-    logging.info('About')
+    logging.info('About') # TODO прикрепить фотку к сообщению, текст будет в описании фотки bot.edit_message_media(caption=text)
     await message.edit_text(
         text=texts.about,
         reply_markup=kb.back_button(

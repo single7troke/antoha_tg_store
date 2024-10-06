@@ -63,6 +63,9 @@ async def create_redis_client():
 async def polling_setup(bot: Bot, dp: Dispatcher):
     try:
         redis.redis = await create_redis_client()
+        payment_numbet_exists = await redis.redis.exists('payment_number')
+        if not payment_numbet_exists:
+            await redis.redis.set('order_number', 0)
         await bot.delete_webhook()
         await set_commands(bot)
         await dp.start_polling(bot)

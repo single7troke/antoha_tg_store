@@ -14,10 +14,22 @@ selected_part = ('{course_name}.\nУрок № {part_id}.\n{description}\n\n'
 
 download_link_button_text = 'Получить ссылку на скачивание\n'
 menu = 'Меню'
-course_part_list = 'Список частей курса "{course_name}":'
+course_part_list = '"{course_name}"'
 link_description = 'Ссылка будет действительна еще {time}'
 link_button_text = 'Скачать'
 chosen_course = 'Вы выбрали {course_name}'
+invite_link_text = ('\n\nВы приобрели курс с проверкой домашних заданий.'
+                    '\nПо следующей ссылке вы сможете присоединиться к группе'
+                    '\nв которой будет проходить проверка.'
+                    '\nСсылка является одноразовой.'
+                    '\nЕсли вы покинете чат, то повторно присоединиться не получится.'
+                    '\n{link}')
+
+email_got = 'Ранее вы указали email: \n{email}\nна него будет отправлен чек.'
+email_new = 'Вы указали {email}, на него будет отправлен чек'
+email_error = 'Email\n<b>{email}</b>\nне прошел валидацию,\nпожалуйста введите новый\nили нажмите "Назад" для отмены'
+email_need = 'Для оплаты требуется указать email на который будет отправлен чек'
+email_instruction = 'Отправьте сообщение с вашим email'
 
 prices_description = (
     "Имеется два пакета:\n\n"

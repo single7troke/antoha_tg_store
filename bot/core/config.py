@@ -8,6 +8,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Buttons(BaseSettings):
     back: str = '<- Назад'
+    next: str = 'Продолжить ->'
+    enter_email: str = 'Указать email'
+    change_email: str = 'Изменить email'
     catalog: str = 'Каталог курсов'
     about: str = 'Обо мне'
     buy: str = 'Купить за {price}'
@@ -20,9 +23,9 @@ class BotConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='tg_')
 
     token: str
-    pay_token: str
     name: str = 'bestbassbot'
     link: str = f'https://t.me/{name}'
+    group_id: int
 
 
 class AppConfig(BaseSettings):

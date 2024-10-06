@@ -1,7 +1,9 @@
+import logging
 import time
 import uuid
-from typing import Union
+from typing import Union, Optional
 
+import requests.exceptions
 from yookassa import Payment, Configuration
 from yookassa.domain.response import PaymentResponse
 
@@ -14,27 +16,60 @@ Configuration.account_id = config.payment.yookassa_account_id
 Configuration.secret_key = config.payment.yookassa_secret_key
 
 
-def create_payment(user_id: Union[str, int], course: Course, price_type: str) -> PaymentResponse:
+def create_payment(
+        user_id: Union[str, int],
+        course: Course,
+        price_type: str,
+        email: str,
+        payment_number: int
+) -> Optional[PaymentResponse]:
     u_id = uuid.uuid4()
-    ts = int(time.time() * 1e6)
-    payment = Payment.create({
-        "amount": {
-            "value": course.prices[price_type],
-            "currency": "RUB"
-        },
-        "confirmation": {
-            "type": "redirect",
-            "return_url": config.bot.link
-        },
-        "capture": True,
-        "description": f"Заказ № {ts}",
-        'metadata': {
-            'tg_user_id': str(user_id),
-            'price_type': str(price_type),
-            'ts': str(ts),
-            'course_id': str(course.id)
-        }
-    }, u_id)
+    ts = int(time.time())
+    try:
+        payment = Payment.create({
+            "amount": {
+                "value": course.prices[price_type],
+                "currency": "RUB"
+            },
+            "confirmation": {
+                "type": "redirect",
+                "return_url": config.bot.link
+            },
+            "receipt": {
+                "customer": {
+                    "email": email
+                },
+                "items": [{
+                    "description": "some course description",  # TODO нужно название курса для чека
+                    "amount": {
+                        "value": course.prices[price_type],
+                        "currency": 'RUB'
+                    },
+                    "vat_code": 1,
+                    "quantity": 1
+                }]
+            },
+            "capture": True,
+            "description": f"Заказ № {payment_number:05}",
+            'metadata': {
+                'tg_user_id': str(user_id),
+                'price_type': str(price_type),
+                'ts': str(ts),
+                'course_id': str(course.id),
+                'email': email
+            }
+        }, u_id)
 
-    return payment
+        return payment
+    except Exception as e:
+        logging.error(e)
+        return None
 
+
+def get_payment(payment_id: str) -> Optional[PaymentResponse]:
+    try:
+        payment = Payment.find_one(payment_id)
+        return payment
+    except requests.exceptions.HTTPError as e:
+        logging.error(e)
+        return None
