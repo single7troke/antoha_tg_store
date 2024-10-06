@@ -48,11 +48,11 @@ async def selected_course_callback(
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
     if user_from_cache:
         user_course = user_from_cache.courses.get(callback_data.data)
-        if user_course.payed:
+        if user_course.paid:
             print('Оплачен')
-            text = texts.course_part_list.format(course_name=user_course.course.name)
+            text = texts.course_description.format(description=user_course.course.description)
 
-            if user_course.payed == 'extended' and not user_from_cache.invite_link:
+            if user_course.paid == 'extended' and not user_from_cache.invite_link:
                 invite_link = await callback.bot.create_chat_invite_link(
                     chat_id=config.bot.group_id,
                     member_limit=1,
@@ -60,12 +60,12 @@ async def selected_course_callback(
                 user_from_cache.invite_link = invite_link.invite_link
                 await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
 
-            keyboard = kb.payed_course_keyboard(user_course.course, user_from_cache.invite_link)
+            keyboard = kb.paid_course_keyboard(user_course.course, user_from_cache.invite_link)
 
-        elif course_type := utils.course_already_payed(user_from_cache):
+        elif course_type := utils.course_already_paid(user_from_cache):
             print('Оплачен, но колбек почему-то не сработал')
-            user_from_cache.courses.get(callback_data.data).payed = course_type
-            text = texts.course_part_list.format(course_name=user_course.course.name)
+            user_from_cache.courses.get(callback_data.data).paid = course_type
+            text = texts.course_description.format(description=user_course.course.description)
 
             if course_type == 'extended':
                 invite_link = await callback.bot.create_chat_invite_link(
@@ -74,7 +74,7 @@ async def selected_course_callback(
                 )
                 user_from_cache.invite_link = invite_link.invite_link
 
-            keyboard = kb.payed_course_keyboard(user_course.course, user_from_cache.invite_link)
+            keyboard = kb.paid_course_keyboard(user_course.course, user_from_cache.invite_link)
             await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
         else:
             print('Еще не оплачен')
@@ -360,14 +360,14 @@ async def back_button_callback(
             caption=texts.course_description.format(description=utils.COURSE.description),
             reply_markup=kb.course_keyboard()
         )
-    elif 'payed_course' in callback_data.data:
+    elif 'paid_course' in callback_data.data:
         course_id = utils.get_course_id_and_course_part_id(
-            callback_data.data.replace('payed_course_', '')
+            callback_data.data.replace('paid_course_', '')
         )[0]
         course = utils.COURSE
         await callback.message.edit_caption(
-            caption=texts.course_part_list.format(course_name=course.name),
-            reply_markup=kb.payed_course_keyboard(course, user_from_cache.invite_link)
+            caption=texts.course_description.format(course_name=course.description),
+            reply_markup=kb.paid_course_keyboard(course, user_from_cache.invite_link)
         )
     elif 'course_part' in callback_data.data:
         course_id, part_id = utils.get_course_id_and_course_part_id(

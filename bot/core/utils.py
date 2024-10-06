@@ -63,7 +63,7 @@ def is_valid_email(email: str) -> bool:
         return False
 
 
-def course_already_payed(user: User):
+def course_already_paid(user: User):
     for course_type, payment_id in user.courses[COURSE.id].payment_ids.items():
         if get_payment(payment_id).status == 'succeeded':
             return course_type
@@ -81,7 +81,7 @@ def load_course_from_descriptor() -> Course:
             options=[CourseOption(
                 name=option['name'],
                 price=option['price'],
-                payed=option['payed'],
+                paid=option['paid'],
                 description=option['description']
             ) for option in data['options']]
         )

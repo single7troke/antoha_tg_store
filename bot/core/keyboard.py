@@ -12,7 +12,7 @@ def user_main_menu_keyboard():
     course = utils.COURSE
     buttons = [
         [InlineKeyboardButton(text=config.buttons.about, callback_data=MainMenuCallback(data="about").pack())],
-        [InlineKeyboardButton(text=course.name, callback_data=CourseCallback(data=course.id).pack())]
+        [InlineKeyboardButton(text=config.buttons.course, callback_data=CourseCallback(data=course.id).pack())]
     ]
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -95,7 +95,7 @@ def pay_course_keyboard(payment_link: str):
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def payed_course_keyboard(course: Course, invite_link: Optional[str] = None):
+def paid_course_keyboard(course: Course, invite_link: Optional[str] = None):
     buttons = [
         [
             InlineKeyboardButton(
@@ -124,7 +124,7 @@ def selected_part_keyboard(course: Course, part_id: int):
         )],
         [InlineKeyboardButton(
             text=config.buttons.back,
-            callback_data=BackButtonCallback(data=f'payed_course_{course.id}---{part_id}').pack()
+            callback_data=BackButtonCallback(data=f'paid_course_{course.id}---{part_id}').pack()
         )]
     ]
 
@@ -138,7 +138,7 @@ def link_to_download_part_keyboard(link_key: str, course_id, part_id, back_to_me
         [InlineKeyboardButton(
             text=config.buttons.back,
             callback_data=BackButtonCallback(
-                data=f'course_part_{course_id}---{part_id}' if not back_to_menu else f'payed_course_{course_id}---{part_id}'
+                data=f'course_part_{course_id}---{part_id}' if not back_to_menu else f'paid_course_{course_id}---{part_id}'
             ).pack()
         )]
     ]
