@@ -25,7 +25,6 @@ async def main_menu(message: types.Message):
             filename=f'pic_{time.time()}',
             chunk_size=4096
         ),
-        # caption=texts.menu,
         reply_markup=kb.user_main_menu_keyboard()
     )
     await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
@@ -136,19 +135,34 @@ async def email_form(message: types.Message, state: FSMContext):
         data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
         user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
         user_from_cache.email = email
+
         await cache.create(
             CacheKeyConstructor.user(user_id=user.id),
             pickle.dumps(user_from_cache)
         )
-        response = await message.answer(
-            text=texts.email_new.format(email=email),
+
+        response = await message.bot.send_photo(
+            chat_id=message.chat.id,
+            caption=texts.email_new.format(email=email),
+            photo=FSInputFile(
+                config.path_to_files + '/image/horizontal.jpg',
+                filename=f'pic_{time.time()}',
+                chunk_size=4096
+            ),
             reply_markup=kb.enter_or_confirm_email_keyboard(data.get('price_type'), enter_email=False)
         )
     else:
-        response = await message.answer(
-            text=texts.email_error.format(email=email),
+        response = await message.bot.send_photo(
+            chat_id=message.chat.id,
+            caption=texts.email_error.format(email=email),
+            photo=FSInputFile(
+                config.path_to_files + '/image/horizontal.jpg',
+                filename=f'pic_{time.time()}',
+                chunk_size=4096
+            ),
             reply_markup=kb.enter_or_confirm_email_keyboard(data.get('price_type'), enter_email=True)
         )
+
     await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
 
 
