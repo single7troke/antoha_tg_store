@@ -5,6 +5,7 @@ import time
 from aiogram import types, Router, Bot
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from aiogram.types import InputFile, FSInputFile
 
 from core import *
 from db.redis import get_redis_db, RedisDB
@@ -17,8 +18,14 @@ config = get_config()
 
 @router.message(Command(commands=('menu',)))
 async def main_menu(message: types.Message):
-    response = await message.answer(
-        text=texts.menu,
+    response = await message.bot.send_photo(
+        chat_id=message.chat.id,
+        photo=FSInputFile(
+            config.path_to_files + '/image/horizontal.jpg',
+            filename=f'pic_{time.time()}',
+            chunk_size=4096
+        ),
+        # caption=texts.menu,
         reply_markup=kb.user_main_menu_keyboard()
     )
     await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
@@ -85,8 +92,8 @@ async def selected_course_callback(
         text = texts.course_description.format(description=course.description)
         keyboard = kb.course_keyboard()
 
-    await callback.message.edit_text(
-        text=text,
+    await callback.message.edit_caption(
+        caption=text,
         reply_markup=keyboard
     )
 
@@ -96,8 +103,8 @@ async def selected_course_prices_callback(
         callback: types.CallbackQuery,
         callback_data: cb.CoursePricesCallback,
 ):
-    await callback.message.edit_text(
-        text=texts.prices_description.format(
+    await callback.message.edit_caption(
+        caption=texts.prices_description.format(
             basic_price=utils.COURSE.prices['basic'][:-3],
             extended_price=utils.COURSE.prices['extended'][:-3]  # TODO это тоже хардкод, расценок может быть больше
         ),
@@ -113,8 +120,8 @@ async def enter_email_callback(
 ):
     await state.set_state(form.Email.email)
     await state.update_data(price_type=callback_data.data)
-    await callback.message.edit_text(
-        text=texts.email_instruction,
+    await callback.message.edit_caption(
+        caption=texts.email_instruction,
         reply_markup=kb.back_button('course')
     )
 
@@ -159,13 +166,13 @@ async def check_email_callback(
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
 
     if not user_from_cache.email:
-        await callback.message.edit_text(
-            text=texts.email_need,
+        await callback.message.edit_caption(
+            caption=texts.email_need,
             reply_markup=kb.enter_or_confirm_email_keyboard(price_type, enter_email=True)
         )
     else:
-        await callback.message.edit_text(
-            text=texts.email_got.format(email=user_from_cache.email),
+        await callback.message.edit_caption(
+            caption=texts.email_got.format(email=user_from_cache.email),
             reply_markup=kb.enter_or_confirm_email_keyboard(price_type, enter_email=False)
         )
 
@@ -216,14 +223,14 @@ async def pay_button_callback(
         )
 
     if not payment_link:
-        await callback.message.edit_text(
-            text='Error',  # TODO сделать текст ошибки если платеж неудалось создать
+        await callback.message.edit_caption(
+            caption='Error',  # TODO сделать текст ошибки если платеж неудалось создать + картинку с ошибкой(но тогда придется не edit_caption а edit_media)
             reply_markup=kb.back_button('menu')
         )
         return
 
-    await callback.message.edit_text(
-        text=texts.chosen_course.format(
+    await callback.message.edit_caption(
+        caption=texts.chosen_course.format(
             course_name='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий\"'
         ),
         reply_markup=kb.pay_course_keyboard(payment_link)
@@ -249,20 +256,20 @@ async def selected_part_callback(
             remaining_time = utils.remaining_time(seconds)
             text = texts.link_description.format(time=remaining_time)
 
-            await callback.message.edit_text(
-                text=text,
+            await callback.message.edit_caption(
+                caption=text,
                 reply_markup=kb.link_to_download_part_keyboard(link_key, course.id, part_id, back_to_menu=True)
             )
             return
         else:
-            await callback.message.edit_text(
-                text='Время вышло',  # TODO добавить текст
+            await callback.message.edit_caption(
+                caption='Время вышло',  # TODO добавить текст
                 reply_markup=kb.back_button('course')
             )
             return
 
-    await callback.message.edit_text(
-        text=texts.selected_part.format(
+    await callback.message.edit_caption(
+        caption=texts.selected_part.format(
             course_name=course.name, part_id=part_id, description=course.parts[part_id]
         ),
         reply_markup=kb.selected_part_keyboard(course, part_id)
@@ -296,16 +303,16 @@ async def download_part_callback(
 
     text = texts.link_description.format(time=remaining_time)
 
-    await callback.message.edit_text(
-        text=text,
+    await callback.message.edit_caption(
+        caption=text,
         reply_markup=kb.link_to_download_part_keyboard(link_key, course.id, part_id)
     )
 
 
 async def about(message: types.Message):
     logging.info('About') # TODO прикрепить фотку к сообщению, текст будет в описании фотки bot.edit_message_media(caption=text)
-    await message.edit_text(
-        text=texts.about,
+    await message.edit_caption(
+        caption=texts.about,
         reply_markup=kb.back_button(
             callback_data="menu"
         )
@@ -314,7 +321,7 @@ async def about(message: types.Message):
 
 async def catalog(message: types.Message):
     logging.info('Catalog')
-    await message.edit_text(f'Список курсов.', reply_markup=kb.catalog_keyboard())
+    await message.edit_caption(caption=f'Список курсов.', reply_markup=kb.catalog_keyboard())
 
 
 @router.callback_query(cb.BackButtonCallback.filter())
@@ -325,14 +332,13 @@ async def back_button_callback(
 ):
     print(f'Back button, callback data: {callback_data.data}')
     await state.clear()
+    from_id = callback.message.message_id - 1
 
     if callback_data.data == 'menu':
-        await callback.message.edit_text(
-            text=texts.menu, reply_markup=kb.user_main_menu_keyboard()
-        )
+        await callback.message.edit_caption(reply_markup=kb.user_main_menu_keyboard())
     elif callback_data.data == 'course':
-        await callback.message.edit_text(
-            text=texts.course_description.format(description=utils.COURSE.description),
+        await callback.message.edit_caption(
+            caption=texts.course_description.format(description=utils.COURSE.description),
             reply_markup=kb.course_keyboard()
         )
     elif 'payed_course' in callback_data.data:
@@ -340,8 +346,8 @@ async def back_button_callback(
             callback_data.data.replace('payed_course_', '')
         )[0]
         course = utils.COURSE
-        await callback.message.edit_text(
-            text=texts.course_part_list.format(course_name=course.name),
+        await callback.message.edit_caption(
+            caption=texts.course_part_list.format(course_name=course.name),
             reply_markup=kb.payed_course_keyboard(course)
         )
     elif 'course_part' in callback_data.data:
@@ -349,11 +355,11 @@ async def back_button_callback(
             callback_data.data.replace('course_part_', '')
         )
         course = utils.COURSE
-        await callback.message.edit_text(
-            text=texts.selected_part.format(
+        await callback.message.edit_caption(
+            caption=texts.selected_part.format(
                 course_name=course.name, part_id=part_id, description=course.parts[part_id]
             ),
             reply_markup=kb.selected_part_keyboard(course, part_id)
         )
 
-    await utils.clear_messages(callback.bot, callback.message.chat.id, callback.message.message_id - 1)
+    await utils.clear_messages(callback.bot, callback.message.chat.id, from_id)
