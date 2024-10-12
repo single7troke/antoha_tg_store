@@ -58,7 +58,7 @@ class Config(BaseSettings):
     web_app_url: str = "http://app:8000/api/v1/"
     path_to_pem_file: str = "/etc/ssl/certs/public.pem"
     server_ip: str = ""
-    server_url: str = 'http://127.0.0.1'
+    server_url: str
     path_to_files: str = '/var/www/app/files'
     secret_key: str
     sales_start_dt: datetime
