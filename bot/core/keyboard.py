@@ -112,15 +112,25 @@ def paid_course_keyboard(course: Course, invite_link: Optional[str] = None):
     if invite_link:
         buttons.insert(
             0,
-            [InlineKeyboardButton(text='Перейти в группу', url=invite_link)])
+            [InlineKeyboardButton(text='Перейти в группу', url=invite_link)])  # todo
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def selected_part_keyboard(course: Course, part_id: int):
+def course_part_keyboard(course_id: int, part_id: int) -> InlineKeyboardMarkup:
     buttons = [
         [InlineKeyboardButton(
-            text=texts.download_link_button_text,
-            callback_data=DownloadPartCallback(data=f'{course.id}---{part_id}').pack()
+            text=config.buttons.back,
+            callback_data=CoursePartCallback(data=f'{course_id}---{part_id}').pack()
+        )]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def create_download_link_keyboard(course: Course, part_id: int):
+    buttons = [
+        [InlineKeyboardButton(
+            text=texts.get_download_link,
+            callback_data=CreateDownloadLink(data=f'{course.id}---{part_id}').pack()
         )],
         [InlineKeyboardButton(
             text=config.buttons.back,
@@ -134,7 +144,7 @@ def selected_part_keyboard(course: Course, part_id: int):
 def link_to_download_part_keyboard(link_key: str, course_id, part_id, back_to_menu=False):
     url = utils.get_download_link(link_key)
     buttons = [
-        [InlineKeyboardButton(text=texts.link_button_text, url=url)],
+        [InlineKeyboardButton(text=config.buttons.download, url=url)],
         [InlineKeyboardButton(
             text=config.buttons.back,
             callback_data=BackButtonCallback(

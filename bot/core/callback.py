@@ -29,7 +29,7 @@ class CoursePartCallback(BaseCallback, prefix='part'):
     pass
 
 
-class DownloadPartCallback(BaseCallback, prefix='download'):
+class CreateDownloadLink(BaseCallback, prefix='download'):
     pass
 
 

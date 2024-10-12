@@ -12,12 +12,13 @@ selected_part = ('\t{course_name}.\n\nУрок № {part_id}.\n{description}\n\n
                  'По истечению этого времени\n'
                  'скачать выбранный урок будет невозможно.\n')
 
-download_link_button_text = 'Получить ссылку на скачивание\n'
+get_download_link = 'Получить ссылку на скачивание\n'
 menu = 'Меню'
-course_part_list = '"{course_name}"'
-link_description = 'Ссылка будет действительна еще {time}'
-link_button_text = 'Скачать'
-chosen_course = 'Вы выбрали {course_name}'
+course_part_list = '"{course_type}"'
+chosen_course_type = 'Вы выбрали {course_name}.'
+link_description = '\n\nСсылка будет действительна еще {time}'
+link_expired = 'К сожаления время на скачивание данного урока вышло.'
+link_created = 'Ссылка создана, вернитесь назад к уроку.'
 invite_link_text = ('\n\nВы приобрели курс с проверкой домашних заданий.'
                     '\nПо следующей ссылке вы сможете присоединиться к группе'
                     '\nв которой будет проходить проверка.'
@@ -28,9 +29,8 @@ invite_link_text = ('\n\nВы приобрели курс с проверкой 
 email_got = 'Ранее вы указали email: \n<b>{email}</b>\nна него будет отправлен чек.'
 email_new = 'Вы указали <b>{email}</b>, на него будет отправлен чек'
 email_error = 'Email\n<b>{email}</b>\nне прошел валидацию,\nпожалуйста введите новый\nили нажмите "Назад" для отмены'
-email_need = ('Для оплаты требуется указать email на который будет отправлен чек.'
-              '\nНапишите свой email в поле ввода сообщения и отправьте.')
-email_instruction = 'Отправьте сообщение с вашим email'
+email_need = 'Для оплаты требуется указать email на который будет отправлен чек'
+email_instruction = 'Напечатайте свой email в поле ввода сообщения и отправьте.'
 
 prices_description = (
     "Имеется два пакета:\n\n"

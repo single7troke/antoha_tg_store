@@ -16,6 +16,13 @@ config = get_config()
 
 # TODO убрать принты, добавить логи
 
+# TODO добавить описание к каждой функции
+
+# TODO сообщение типа Публичная оферта, когда получил ссылку на оплату.
+
+# TODO старт начала продаж
+
+
 @router.message(Command(commands=('menu',)))
 async def main_menu(message: types.Message):
     response = await message.bot.send_photo(
@@ -240,37 +247,39 @@ async def pay_button_callback(
 
     if not payment_link:
         await callback.message.edit_caption(
-            caption='Error',  # TODO сделать текст ошибки если платеж неудалось создать + картинку с ошибкой(но тогда придется не edit_caption а edit_media)
+            caption='Error', # TODO сделать текст ошибки если платеж неудалось создать + картинку с ошибкой(но тогда придется не edit_caption а edit_media)
             reply_markup=kb.back_button('menu')
         )
         return
 
     await callback.message.edit_caption(
-        caption=texts.chosen_course.format(
-            course_name='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий\"'
+        caption=texts.chosen_course_type.format(
+            course_type='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий\"'
         ),
         reply_markup=kb.pay_course_keyboard(payment_link)
     )
 
 
 @router.callback_query(cb.CoursePartCallback.filter())
-async def selected_part_callback(
+async def course_part_callback(
         callback: types.CallbackQuery,
         callback_data: cb.CoursePartCallback
 ):
-    print(callback_data.data)
     cache: RedisDB = get_redis_db()
     course_id, part_id = utils.get_course_id_and_course_part_id(callback_data.data)
     course = utils.COURSE
 
     link_key = cache_key_constructor.CacheKeyConstructor.link(callback.from_user.id, course.id, part_id)
     data_from_cache = await cache.get(link_key)
-    data_from_cache = pickle.loads(data_from_cache) if data_from_cache else None
-    if data_from_cache:
-        seconds = 24 * 60 * 60 - (int(time.time() - data_from_cache['created']))
+    link_data = pickle.loads(data_from_cache) if data_from_cache else None
+    if link_data:
+        seconds = 24 * 60 * 60 - (int(time.time() - link_data['created']))
         if seconds > 0:
             remaining_time = utils.remaining_time(seconds)
-            text = texts.link_description.format(time=remaining_time)
+            text = texts.selected_part.format(
+                course_name=course.name, part_id=part_id, description=course.parts[part_id]
+            )
+            text += texts.link_description.format(time=remaining_time)
 
             await callback.message.edit_caption(
                 caption=text,
@@ -279,8 +288,8 @@ async def selected_part_callback(
             return
         else:
             await callback.message.edit_caption(
-                caption='Время вышло',  # TODO добавить текст
-                reply_markup=kb.back_button('course')
+                caption=texts.link_expired, # добавил текст
+                reply_markup=kb.back_button(f'paid_course_{course_id}---{part_id}')
             )
             return
 
@@ -288,40 +297,28 @@ async def selected_part_callback(
         caption=texts.selected_part.format(
             course_name=course.name, part_id=part_id, description=course.parts[part_id]
         ),
-        reply_markup=kb.selected_part_keyboard(course, part_id)
+        reply_markup=kb.create_download_link_keyboard(course, part_id)
     )
 
 
-@router.callback_query(cb.DownloadPartCallback.filter())
-async def download_part_callback(
+@router.callback_query(cb.CreateDownloadLink.filter())
+async def create_download_link_callback(
         callback: types.CallbackQuery,
-        callback_data: cb.CoursePartCallback
+        callback_data: cb.CreateDownloadLink
 ):
     cache: RedisDB = get_redis_db()
 
-    print(callback_data.data)
     course_id, part_id = utils.get_course_id_and_course_part_id(
         callback_data.data.replace('course_part_', '')
     )
     course = utils.COURSE
     link_key = cache_key_constructor.CacheKeyConstructor.link(callback.from_user.id, course.id, part_id)
-    data_from_cache = await cache.get(link_key)
-    data_from_cache = pickle.loads(data_from_cache) if data_from_cache else None
-
-    if data_from_cache:
-        seconds = 24 * 60 * 60 - (int(time.time() - data_from_cache['created']))
-        seconds = seconds if seconds > 0 else 0
-        remaining_time = utils.remaining_time(seconds)
-    else:
-        remaining_time = utils.remaining_time(24 * 60 * 60)
-        data_to_cache = pickle.dumps({'created': int(time.time())})
-        await cache.create(link_key, data_to_cache)
-
-    text = texts.link_description.format(time=remaining_time)
+    data_to_cache = pickle.dumps({'created': int(time.time())})
+    await cache.create(link_key, data_to_cache)
 
     await callback.message.edit_caption(
-        caption=text,
-        reply_markup=kb.link_to_download_part_keyboard(link_key, course.id, part_id)
+        caption=texts.link_created,
+        reply_markup=kb.course_part_keyboard(course_id, part_id)
     )
 
 
@@ -349,7 +346,7 @@ async def back_button_callback(
     print(f'Back button, callback data: {callback_data.data}')
     await state.clear()
     cache = get_redis_db()
-    data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=callback.message.from_user.id))
+    data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=callback.from_user.id))
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
     from_id = callback.message.message_id - 1
 
@@ -361,15 +358,16 @@ async def back_button_callback(
             reply_markup=kb.course_keyboard()
         )
     elif 'paid_course' in callback_data.data:
-        course_id = utils.get_course_id_and_course_part_id(
-            callback_data.data.replace('paid_course_', '')
-        )[0]
+        # course_id = utils.get_course_id_and_course_part_id(
+        #     callback_data.data.replace('paid_course_', '')
+        # )[0]
         course = utils.COURSE
         await callback.message.edit_caption(
-            caption=texts.course_description.format(course_name=course.description),
+            caption=texts.course_description.format(description=course.description),
             reply_markup=kb.paid_course_keyboard(course, user_from_cache.invite_link)
         )
     elif 'course_part' in callback_data.data:
+        print('course_part')
         course_id, part_id = utils.get_course_id_and_course_part_id(
             callback_data.data.replace('course_part_', '')
         )
@@ -378,7 +376,7 @@ async def back_button_callback(
             caption=texts.selected_part.format(
                 course_name=course.name, part_id=part_id, description=course.parts[part_id]
             ),
-            reply_markup=kb.selected_part_keyboard(course, part_id)
+            reply_markup=kb.course_part_keyboard(course_id, part_id)
         )
 
     await utils.clear_messages(callback.bot, callback.message.chat.id, from_id)

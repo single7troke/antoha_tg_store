@@ -18,6 +18,7 @@ class Buttons(BaseSettings):
     link_to_pay: str = 'Перейти к оплате'
     course_type: Dict[str, str] = {'standard': 'Базовый курс', 'with_support': 'Курс с проверкой домашних заданий'}
     course: str = 'Курс'
+    download: str = 'Скачать'
 
 
 class BotConfig(BaseSettings):
