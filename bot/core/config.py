@@ -63,6 +63,7 @@ class Config(BaseSettings):
     secret_key: str
     sales_start_dt: datetime
     stop_selling_course_with_support_dt: datetime
+    time_zone: int
     buttons: Buttons = Buttons()
     bot: BotConfig = BotConfig()
     app: AppConfig = AppConfig()

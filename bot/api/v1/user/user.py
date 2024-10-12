@@ -100,6 +100,11 @@ async def selected_course_callback(
         text = texts.course_description.format(description=course.description)
         keyboard = kb.course_keyboard()
 
+    if not utils.is_sale_open():
+        text += texts.sales_start_dt.format(
+            sales_start_dt=config.sales_start_dt.replace(microsecond=0, tzinfo=None)
+        )
+
     await callback.message.edit_caption(
         caption=text,
         reply_markup=keyboard
@@ -111,11 +116,14 @@ async def selected_course_prices_callback(
         callback: types.CallbackQuery,
         callback_data: cb.CoursePricesCallback,
 ):
+    text = texts.price_description['basic'].format(basic_price=utils.COURSE.prices['basic'][:-3])
+    if not utils.is_extended_course_sale_ended():
+        text += texts.price_description['extended'].format(
+            extended_price=utils.COURSE.prices['extended'][:-3],
+            end_of_sale_time=config.stop_selling_course_with_support_dt.replace(microsecond=0, tzinfo=None)
+        )
     await callback.message.edit_caption(
-        caption=texts.prices_description.format(
-            basic_price=utils.COURSE.prices['basic'][:-3],
-            extended_price=utils.COURSE.prices['extended'][:-3]  # TODO это тоже хардкод, расценок может быть больше
-        ),
+        caption=text,
         reply_markup=kb.selected_course_prices_keyboard(utils.COURSE.prices)
     )
 

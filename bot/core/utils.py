@@ -1,6 +1,7 @@
 import base64
 import json
 import pickle
+from datetime import timezone, timedelta, datetime
 from typing import List, Dict
 
 from aiogram import Bot
@@ -67,6 +68,16 @@ def course_already_paid(user: User):
     for course_type, payment_id in user.courses[COURSE.id].payment_ids.items():
         if get_payment(payment_id).status == 'succeeded':
             return course_type
+
+
+def is_sale_open() -> bool:
+    tz = timezone(timedelta(hours=config.time_zone))
+    return datetime.now(tz) > config.sales_start_dt
+
+
+def is_extended_course_sale_ended() -> bool:
+    tz = timezone(timedelta(hours=config.time_zone))
+    return datetime.now(tz) > config.stop_selling_course_with_support_dt
 
 
 def load_course_from_descriptor() -> Course:

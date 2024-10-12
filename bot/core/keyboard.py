@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from typing import Union, Optional
 
@@ -44,26 +46,30 @@ def catalog_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def course_keyboard():
-    buttons = [
-        [InlineKeyboardButton(text=config.buttons.prices, callback_data=CoursePricesCallback(data='prices').pack())],
-        [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='menu').pack())]
-    ]
+def course_keyboard() -> InlineKeyboardMarkup:
+    buttons = []
+    if utils.is_sale_open():
+        buttons.append(
+            [InlineKeyboardButton(
+                text=config.buttons.prices, callback_data=CoursePricesCallback(data='prices').pack()
+            )]
+        )
+
+    buttons.append([InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='menu').pack())])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def selected_course_prices_keyboard(prices: dict):
-    buttons = list()
-    print(prices)
-
+def selected_course_prices_keyboard(prices: dict) -> InlineKeyboardMarkup:
+    buttons = []
     for course_type, price in prices.items():
-        buttons.append(
-            [InlineKeyboardButton(
-                text=config.buttons.buy.format(price=price[:-3]),
-                callback_data=CheckEmailCallback(data=course_type).pack()
-            )]
-        )
+        if course_type != 'extended' or not utils.is_extended_course_sale_ended():
+            buttons.append(
+                [InlineKeyboardButton(
+                    text=config.buttons.buy.format(price=price[:-3]),
+                    callback_data=CheckEmailCallback(data=course_type).pack()
+                )]
+            )
 
     buttons.append(
         [InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='course').pack())]
