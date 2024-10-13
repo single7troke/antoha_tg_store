@@ -9,7 +9,7 @@ class Base(BaseModel):
 class CourseOption(BaseModel):
     name: str
     price: str
-    payed: bool
+    paid: bool
     description: str
     payment_link: Optional[str] = None
     payment_data: Optional[Dict[Any, Any]] = {}
@@ -26,10 +26,11 @@ class Course(Base):
 
 class UserCourse(BaseModel):
     course: Course
-    payed: bool = False
-    payment_links: Optional[Dict[str, Optional[str]]] = {}
-    payments_data: Optional[Dict[str, Optional[Dict[Any, Any]]]] = {}
+    paid: Optional[str] = None
+    payment_ids: Dict[str, str] = dict()
 
 
 class User(BaseModel):
     courses: Dict[int, UserCourse] = dict()
+    email: Optional[str] = None
+    invite_link: Optional[str] = None
