@@ -1,7 +1,7 @@
 import logging
 import time
 import uuid
-from typing import Union, Optional
+from typing import Union, Optional, Dict, Any
 
 import requests.exceptions
 from yookassa import Payment, Configuration
@@ -17,7 +17,7 @@ Configuration.secret_key = config.payment.yookassa_secret_key
 
 
 def create_payment(
-        user_id: Union[str, int],
+        user: Dict[Any, Any],
         course: Course,
         price_type: str,
         email: str,
@@ -52,7 +52,10 @@ def create_payment(
             "capture": True,
             "description": f"Заказ № {payment_number:05}",
             'metadata': {
-                'tg_user_id': str(user_id),
+                'tg_id': str(user['id']),
+                'tg_first_name': str(user['first_name']),
+                'tg_last_name': str(user['last_name']),
+                'tg_username': str(user['username']),
                 'price_type': str(price_type),
                 'ts': str(ts),
                 'course_id': str(course.id),

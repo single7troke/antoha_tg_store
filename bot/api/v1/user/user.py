@@ -257,8 +257,7 @@ async def pay_button_callback(
 
     if not payment_data or user_from_cache.email != payment_data.metadata.get('email'):
         order_number = await cache.increase('order_number')
-        # TODO передавать в create_payment пользователя(user.dict()) и там уже в metadata сохранять данные(не только id)
-        new_payment = create_payment(user.id, utils.COURSE, price_type, user_from_cache.email, order_number)
+        new_payment = create_payment(user.dict(), utils.COURSE, price_type, user_from_cache.email, order_number)
         payment_link = new_payment.confirmation.confirmation_url
         user_from_cache.courses.get(utils.COURSE.id).payment_ids[price_type] = new_payment.id
         await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
