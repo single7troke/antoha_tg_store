@@ -68,6 +68,15 @@ class RedisDB(AbstractCache):
         data = await self.redis.delete(user_id)
         return data
 
+    @retry(retry=retry_if_exception_type(ConnectionError),
+           wait=wait_exponential(),
+           stop=stop_after_delay(15),
+           after=after_log(logger, logging.INFO),
+           retry_error_callback=no_connection)
+    async def increase(self, key: str) -> int:
+        data = await self.redis.incr(key, 1)
+        return data
+
 
 def get_redis_db():
     redis: Redis = get_redis()

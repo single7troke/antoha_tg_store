@@ -27,6 +27,7 @@ async def startup():
 
 app.include_router(payments.router, prefix="/api/v1/payments", tags=["payments"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["payments"])
+# app.include_router(files.router, prefix="/api/v1/user", tags=["payments"])
 
 if __name__ == "__main__":
     uvicorn.run(

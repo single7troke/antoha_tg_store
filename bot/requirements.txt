@@ -6,4 +6,6 @@ aioredis==2.0.1
 yookassa==3.2.0
 aioredis==2.0.1
 tenacity==8.4.1
+cffi>=1.12
 cryptography==43.0.0
+email_validator==2.1.1

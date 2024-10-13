@@ -1,11 +1,17 @@
 import base64
 import json
+import pickle
+from datetime import timezone, timedelta, datetime
 from typing import List, Dict
 
+from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
 from cryptography.fernet import Fernet
+from email_validator import validate_email, EmailNotValidError
 
-from models.models import Course
+from models.models import Course, CourseOption, User
 from .config import get_config
+from .payments import get_payment
 
 config = get_config()
 
@@ -36,13 +42,61 @@ def get_course_id_and_course_part_id(s: str) -> List[int]:
     return [int(i) for i in s.split('---')]
 
 
-def load_courses_from_descriptor() -> Dict[int, Course]:
-    data = {}
+def bytes_to_user(data: bytes) -> User:
+    user = pickle.loads(data)
+    return user
+
+
+async def clear_messages(bot: Bot, chat_id: int, message_id: int) -> None:
+    while True:
+        try:
+            await bot.delete_message(chat_id, message_id)
+            message_id -= 1
+        except TelegramBadRequest:
+            return
+
+
+def is_valid_email(email: str) -> bool:
+    try:
+        valid = validate_email(email)
+        return True
+    except EmailNotValidError as e:
+        return False
+
+
+def course_already_paid(user: User):
+    for course_type, payment_id in user.courses[COURSE.id].payment_ids.items():
+        if get_payment(payment_id).status == 'succeeded':
+            return course_type
+
+
+def is_sale_open() -> bool:
+    tz = timezone(timedelta(hours=config.time_zone))
+    return datetime.now(tz) > config.sales_start_dt
+
+
+def is_extended_course_sale_ended() -> bool:
+    tz = timezone(timedelta(hours=config.time_zone))
+    return datetime.now(tz) > config.stop_selling_course_with_support_dt
+
+
+def load_course_from_descriptor() -> Course:
     with open(f'{config.path_to_files}/course_descriptor.json', 'r') as file:
-        for k, v in json.load(file).items():
-            data[int(k)] = Course(id=v['id'], name=v['name'], price=v['price'], description=v['description'],
-                                  parts={int(i): j for i, j in v['parts'].items() if v['parts']})
-        return data
+        data = json.load(file)
+        course = Course(
+            id=data['id'],
+            name=data['name'],
+            prices=data['prices'],
+            description=data['description'],
+            parts=data['parts'],
+            options=[CourseOption(
+                name=option['name'],
+                price=option['price'],
+                paid=option['paid'],
+                description=option['description']
+            ) for option in data['options']]
+        )
+        return course
 
 
-COURSES = load_courses_from_descriptor()
+COURSE = load_course_from_descriptor() # TODO переделать

@@ -13,12 +13,12 @@ class BackButtonCallback(BaseCallback, prefix="back"):
     pass
 
 
-class CatalogCallback(BaseCallback, prefix='catalog'):
-    pass
-
-
 class CourseCallback(BaseCallback, prefix='course'):
     data: int
+
+
+class CoursePricesCallback(BaseCallback, prefix='course_prices'):
+    pass
 
 
 class PayButtonCallback(BaseCallback, prefix='pay'):
@@ -29,6 +29,14 @@ class CoursePartCallback(BaseCallback, prefix='part'):
     pass
 
 
-class DownloadPartCallback(BaseCallback, prefix='download'):
+class CreateDownloadLink(BaseCallback, prefix='download'):
+    pass
+
+
+class CheckEmailCallback(BaseCallback, prefix='check_email'):
+    pass
+
+
+class EnterEmailCallback(BaseCallback, prefix='confirm_email'):
     pass
 

@@ -63,6 +63,9 @@ async def create_redis_client():
 async def polling_setup(bot: Bot, dp: Dispatcher):
     try:
         redis.redis = await create_redis_client()
+        payment_numbet_exists = await redis.redis.exists('payment_number')
+        if not payment_numbet_exists:
+            await redis.redis.set('order_number', 0)
         await bot.delete_webhook()
         await set_commands(bot)
         await dp.start_polling(bot)
@@ -92,7 +95,6 @@ if __name__ == '__main__':
     dp = Dispatcher()
     dp.message.register(welcome, Command(commands=["start"]))
     # dp.message.register(admin_description, Command(commands=["admin"]))
-    # dp.include_router(google_calendar.router)
     dp.include_router(user_router)
     # dp.message.middleware(AdminAccessMiddleware())
     # dp.message.outer_middleware(UserAccessMiddleware())
@@ -102,7 +104,7 @@ if __name__ == '__main__':
         logging.info("Run webhook")
         dp.startup.register(webhook_setup)
         app = web.Application()
-        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/calendar_bot")
+        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/best_bass_webhook")
         setup_application(app, dp, bot=bot)
         web.run_app(app)
     else:
