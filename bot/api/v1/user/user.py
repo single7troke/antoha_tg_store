@@ -14,17 +14,18 @@ from models import User, UserCourse
 router = Router()
 config = get_config()
 
-# TODO убрать принты, добавить логи
+logger = logging.getLogger(__name__)
 
 # TODO добавить описание к каждой функции
 
 # TODO сообщение типа Публичная оферта, когда получил ссылку на оплату.
 
-# TODO старт начала продаж
-
 
 @router.message(Command(commands=('menu',)))
 async def main_menu(message: types.Message):
+    logger.info(f'Main menu. '
+                f'user_id: {message.from_user.id}, '
+                f'user_name: {message.from_user.username}')
     response = await message.bot.send_photo(
         chat_id=message.chat.id,
         photo=FSInputFile(
@@ -56,7 +57,11 @@ async def selected_course_callback(
     if user_from_cache:
         user_course = user_from_cache.courses.get(callback_data.data)
         if user_course.paid:
-            print('Оплачен')
+            logger.info(f'Paid course. '
+                        f'user_id: {user.id}, '
+                        f'user_name: {callback.from_user.username}, '
+                        f'course_id: {user_course.course.id}, '
+                        f'course_type: {user_course.paid}')
             text = texts.course_description.format(description=user_course.course.description)
 
             if user_course.paid == 'extended' and not user_from_cache.invite_link:
@@ -70,7 +75,13 @@ async def selected_course_callback(
             keyboard = kb.paid_course_keyboard(user_course.course, user_from_cache.invite_link)
 
         elif course_type := utils.course_already_paid(user_from_cache):
-            print('Оплачен, но колбек почему-то не сработал')
+            logger.info(
+                f'Paid course, but somthing was wrong with callback. '
+                f'user_id: {user.id}, '
+                f'user_name: {callback.from_user.username}, '
+                f'course_id: {user_course.course.id}, '
+                f'course_type: {user_course.paid}'
+            )
             user_from_cache.courses.get(callback_data.data).paid = course_type
             text = texts.course_description.format(description=user_course.course.description)
 
@@ -84,12 +95,12 @@ async def selected_course_callback(
             keyboard = kb.paid_course_keyboard(user_course.course, user_from_cache.invite_link)
             await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
         else:
-            print('Еще не оплачен')
+            logger.info(f'Not paid. user_id: {user.id}, user_name: {callback.from_user.username}')
             text = texts.course_description.format(description=user_course.course.description)
             keyboard = kb.course_keyboard()
     else:
+        logging.info(f'New user. user_id: {user.id}, user_name: {callback.from_user.username}')
         course = utils.COURSE
-        print('Вообще новый юзер')
         data_to_cache = User(
             courses={course.id: UserCourse(course=course)}
         )
@@ -101,6 +112,7 @@ async def selected_course_callback(
         keyboard = kb.course_keyboard()
 
     if not utils.is_sale_open():
+        logger.info(f'Sale not open. user_id: {user.id}, user_name: {callback.from_user.username}')
         text += texts.sales_start_dt.format(
             sales_start_dt=config.sales_start_dt.replace(microsecond=0, tzinfo=None)
         )
@@ -116,6 +128,7 @@ async def selected_course_prices_callback(
         callback: types.CallbackQuery,
         callback_data: cb.CoursePricesCallback,
 ):
+    logger.info(f'Prises. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
     text = texts.price_description['basic'].format(basic_price=utils.COURSE.prices['basic'][:-3])
     if not utils.is_extended_course_sale_ended():
         text += texts.price_description['extended'].format(
@@ -134,6 +147,7 @@ async def enter_email_callback(
         callback_data: cb.EnterEmailCallback,
         state: FSMContext
 ):
+    logger.info(f'user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
     await state.set_state(form.Email.email)
     await state.update_data(price_type=callback_data.data)
     await callback.message.edit_caption(
@@ -147,6 +161,10 @@ async def email_form(message: types.Message, state: FSMContext):
     data = await state.get_data()
     email = message.text
     if utils.is_valid_email(email):
+        logger.info(f'Valid email'
+                    f'user_id: {message.from_user.id}, '
+                    f'user_name: {message.from_user.username}, '
+                    f'email: {email}')
         cache: RedisDB = get_redis_db()
         user = message.from_user
         data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
@@ -169,6 +187,10 @@ async def email_form(message: types.Message, state: FSMContext):
             reply_markup=kb.enter_or_confirm_email_keyboard(data.get('price_type'), enter_email=False)
         )
     else:
+        logger.info(f'invalid email'
+                    f'user_id: {message.from_user.id}, '
+                    f'user_name: {message.from_user.username},'
+                    f'entered_email: {email}')
         response = await message.bot.send_photo(
             chat_id=message.chat.id,
             caption=texts.email_error.format(email=email),
@@ -197,11 +219,18 @@ async def check_email_callback(
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
 
     if not user_from_cache.email:
+        logger.info(f'Need email'
+                    f'user_id: {callback.from_user.id}, '
+                    f'user_name: {callback.from_user.username},')
         await callback.message.edit_caption(
             caption=texts.email_need,
             reply_markup=kb.enter_or_confirm_email_keyboard(price_type, enter_email=True)
         )
     else:
+        logger.info(f'Got email'
+                    f'user_id: {callback.from_user.id}, '
+                    f'user_name: {callback.from_user.username}, '
+                    f'email: {user_from_cache.email}')
         await callback.message.edit_caption(
             caption=texts.email_got.format(email=user_from_cache.email),
             reply_markup=kb.enter_or_confirm_email_keyboard(price_type, enter_email=False)
@@ -233,9 +262,19 @@ async def pay_button_callback(
         payment_link = new_payment.confirmation.confirmation_url
         user_from_cache.courses.get(utils.COURSE.id).payment_ids[price_type] = new_payment.id
         await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
+        logger.info(f'user_id: {callback.from_user.id}, new payment created: {new_payment.id}')
     elif payment_data.status == 'pending':
+        logger.info(f'Payment pending'
+                    f'user_id: {callback.from_user.id}, '
+                    f'user_name: {callback.from_user.username}, '
+                    f'payment_id: {payment_data.id}')
         payment_link = payment_data.confirmation.confirmation_url
     elif payment_data.status == 'canceled':
+        logger.info(
+            f'Payment canceled'
+            f'user_id: {callback.from_user.id}, '
+            f'user_name: {callback.from_user.username}, '
+            f'payment_id: {payment_data.id}')
         user_payment_problems = await cache.get(CacheKeyConstructor.payment_issues(user_id=user.id))
         user_payment_problems = pickle.loads(user_from_cache) if user_payment_problems else list()
         user_payment_problems.append(payment_id)
@@ -252,12 +291,17 @@ async def pay_button_callback(
             CacheKeyConstructor.user(user_id=user.id),
             pickle.dumps(user_from_cache)
         )
+        logger.info(f'New payment created'
+                    f'user_id: {callback.from_user.id}, '
+                    f'user_name: {callback.from_user.username}, '
+                    f'payment_id: {new_payment.id}')
 
     if not payment_link:
         await callback.message.edit_caption(
             caption='Error', # TODO сделать текст ошибки если платеж неудалось создать + картинку с ошибкой(но тогда придется не edit_caption а edit_media)
             reply_markup=kb.back_button('menu')
         )
+        logger.info(f'can\'t create payment. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
         return
 
     await callback.message.edit_caption(
@@ -284,6 +328,13 @@ async def course_part_callback(
         seconds = 24 * 60 * 60 - (int(time.time() - link_data['created']))
         if seconds > 0:
             remaining_time = utils.remaining_time(seconds)
+            logger.info(
+                f'Valid link. '
+                f'user_id: {callback.from_user.id}, '
+                f'user_name: {callback.from_user.username}, '
+                f'course_id: {course_id},  part_id: {part_id}, '
+                f'remaining_time: {remaining_time}'
+            )
             text = texts.selected_part.format(
                 course_name=course.name, part_id=part_id, description=course.parts[part_id]
             )
@@ -295,12 +346,24 @@ async def course_part_callback(
             )
             return
         else:
+            logger.info(
+                f'Link exired. '
+                f'user_id: {callback.from_user.id}, '
+                f'user_name: {callback.from_user.username},'
+                f'course_id: {course_id} part_id: {part_id} expired'
+            )
             await callback.message.edit_caption(
-                caption=texts.link_expired, # добавил текст
+                caption=texts.link_expired,
                 reply_markup=kb.back_button(f'paid_course_{course_id}---{part_id}')
             )
             return
 
+    logger.info(
+        f'No link to download course part. '
+        f'user_id: {callback.from_user.id}, '
+        f'user_name: {callback.from_user.username}, '
+        f'course_id: {course_id} part_id: {part_id}'
+    )
     await callback.message.edit_caption(
         caption=texts.selected_part.format(
             course_name=course.name, part_id=part_id, description=course.parts[part_id]
@@ -323,6 +386,9 @@ async def create_download_link_callback(
     link_key = cache_key_constructor.CacheKeyConstructor.link(callback.from_user.id, course.id, part_id)
     data_to_cache = pickle.dumps({'created': int(time.time())})
     await cache.create(link_key, data_to_cache)
+    logger.info(
+        f'Link created. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}, course_id: {course_id}, part_id: {part_id}, link_key: {link_key}'
+    )
 
     await callback.message.edit_caption(
         caption=texts.link_created,
@@ -331,7 +397,7 @@ async def create_download_link_callback(
 
 
 async def about(message: types.Message):
-    logging.info('About') # TODO прикрепить фотку к сообщению, текст будет в описании фотки bot.edit_message_media(caption=text)
+    logging.info(f'About. user_id: {message.from_user.id}, user_name: {message.from_user.username}')
     await message.edit_caption(
         caption=texts.about,
         reply_markup=kb.back_button(
