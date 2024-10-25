@@ -99,7 +99,7 @@ async def selected_course_callback(
             text = texts.course_description.format(description=user_course.course.description)
             keyboard = kb.course_keyboard()
     else:
-        logging.info(f'New user. user_id: {user.id}, user_name: {callback.from_user.username}')
+        logger.info(f'New user. user_id: {user.id}, user_name: {callback.from_user.username}')
         course = utils.COURSE
         data_to_cache = User(
             courses={course.id: UserCourse(course=course)}
@@ -128,7 +128,7 @@ async def selected_course_prices_callback(
         callback: types.CallbackQuery,
         callback_data: cb.CoursePricesCallback,
 ):
-    logger.info(f'Prises. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
+    logger.info(f'Prices. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
     text = texts.price_description['basic'].format(basic_price=utils.COURSE.prices['basic'][:-3])
     if not utils.is_extended_course_sale_ended():
         text += texts.price_description['extended'].format(
@@ -396,7 +396,7 @@ async def create_download_link_callback(
 
 
 async def about(message: types.Message):
-    logging.info(f'About. user_id: {message.from_user.id}, user_name: {message.from_user.username}')
+    logger.info(f'About. user_id: {message.from_user.id}, user_name: {message.from_user.username}')
     await message.edit_caption(
         caption=texts.about,
         reply_markup=kb.back_button(
@@ -406,7 +406,7 @@ async def about(message: types.Message):
 
 
 async def catalog(message: types.Message):
-    logging.info('Catalog')
+    logger.info('Catalog')
     await message.edit_caption(caption=f'Список курсов.', reply_markup=kb.catalog_keyboard())
 
 
@@ -416,7 +416,10 @@ async def back_button_callback(
         callback_data: cb.BackButtonCallback,
         state: FSMContext
 ):
-    print(f'Back button, callback data: {callback_data.data}')
+    logger.info(f'Back button.'
+                f'user_id: {callback.from_user.id}, '
+                f'user_name: {callback.from_user.username}, '
+                f'callback_data: {callback_data.data}')
     await state.clear()
     cache = get_redis_db()
     data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=callback.from_user.id))
@@ -440,7 +443,6 @@ async def back_button_callback(
             reply_markup=kb.paid_course_keyboard(course, user_from_cache.invite_link)
         )
     elif 'course_part' in callback_data.data:
-        print('course_part')
         course_id, part_id = utils.get_course_id_and_course_part_id(
             callback_data.data.replace('course_part_', '')
         )

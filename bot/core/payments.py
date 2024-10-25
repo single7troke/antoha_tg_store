@@ -15,6 +15,8 @@ config = get_config()
 Configuration.account_id = config.payment.yookassa_account_id
 Configuration.secret_key = config.payment.yookassa_secret_key
 
+logger = logging.getLogger(__name__)
+
 
 def create_payment(
         user: Dict[Any, Any],
@@ -65,7 +67,7 @@ def create_payment(
 
         return payment
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
         return None
 
 
@@ -74,5 +76,5 @@ def get_payment(payment_id: str) -> Optional[PaymentResponse]:
         payment = Payment.find_one(payment_id)
         return payment
     except requests.exceptions.HTTPError as e:
-        logging.error(e)
+        logger.error(e)
         return None

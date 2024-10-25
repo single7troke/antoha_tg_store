@@ -8,10 +8,6 @@ from db.abstract_cache import AbstractCache
 from core import Config
 
 config = Config()
-
-logging.basicConfig(format="%(asctime)s %(message)s",
-                    datefmt="%m/%d/%Y %I:%M:%S %p %Z",
-                    level=config.log_lvl)
 logger = logging.getLogger(__name__)
 redis: Redis | None = None
 
