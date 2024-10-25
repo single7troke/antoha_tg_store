@@ -62,8 +62,9 @@ async def create_redis_client():
 
 async def polling_setup(bot: Bot, dp: Dispatcher):
     try:
+        logger.info('Starting in polling mode')
         redis.redis = await create_redis_client()
-        payment_numbet_exists = await redis.redis.exists('payment_number')
+        payment_numbet_exists = await redis.redis.exists('payment_number') # TODO поправить имя переменной, добавить такую же проверку на число проданных расширенных курсов.
         if not payment_numbet_exists:
             await redis.redis.set('order_number', 0)
         await bot.delete_webhook()
@@ -74,21 +75,28 @@ async def polling_setup(bot: Bot, dp: Dispatcher):
 
 
 async def webhook_setup(bot: Bot):
-    await bot.delete_webhook()
-    await set_commands(bot)
-    cert = FSInputFile(config.path_to_pem_file)
-    await bot.set_webhook(url=config.server_url,
-                          ip_address=config.server_ip,
-                          certificate=cert)
-    info = await bot.get_webhook_info()
-    info = json.loads(info.json())
-    logging.info(f'webhook info:\n{json.dumps(info, indent=4)}')
-
+    try:
+        logger.info("Starting in webhook mode")
+        await bot.delete_webhook()
+        await set_commands(bot)
+        cert = FSInputFile(config.path_to_pem_file)
+        await bot.set_webhook(url=config.server_url,
+                              ip_address=config.server_ip,
+                              certificate=cert)
+        info = await bot.get_webhook_info()
+        info = json.loads(info.json())
+        logger.info(f'Webhook info:\n{json.dumps(info, indent=4)}')
+    except Exception as e:
+        raise e
 
 if __name__ == '__main__':
-    logging.basicConfig(format="%(asctime)s %(message)s",
-                        datefmt="%Y/%m/%d %H:%M:%S",
-                        level=config.log_lvl)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(name)s:%(funcName)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    logger = logging.getLogger(__name__)
 
     default = DefaultBotProperties(parse_mode='HTML')
     bot = Bot(token=config.bot.token, default=default)
@@ -101,12 +109,10 @@ if __name__ == '__main__':
 
     webhook = args.webhook
     if webhook:
-        logging.info("Run webhook")
         dp.startup.register(webhook_setup)
         app = web.Application()
         SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/best_bass_webhook")
         setup_application(app, dp, bot=bot)
         web.run_app(app)
     else:
-        logging.info("Run polling")
         asyncio.run(polling_setup(bot=bot, dp=dp))
