@@ -282,7 +282,7 @@ async def pay_button_callback(
             pickle.dumps(user_payment_problems)
         )
         order_number = await cache.increase('order_number')
-        new_payment = create_payment(user.id, utils.COURSE, price_type, user_from_cache.email, order_number)
+        new_payment = create_payment(user.dict(), utils.COURSE, price_type, user_from_cache.email, order_number)
         payment_link = new_payment.confirmation.confirmation_url
 
         user_from_cache.courses.get(utils.COURSE.id).payment_ids[price_type] = new_payment.id
@@ -405,7 +405,7 @@ async def about(message: types.Message):
     )
 
 
-async def catalog(message: types.Message):
+async def catalog(message: types.Message):  # Не используется
     logger.info('Catalog')
     await message.edit_caption(caption=f'Список курсов.', reply_markup=kb.catalog_keyboard())
 
