@@ -12,6 +12,7 @@ selected_part = ('\t{course_name}.\n\nУрок № {part_id}.\n{description}\n\n
 
 get_download_link = 'Получить ссылку на скачивание\n'
 menu = 'Меню'
+introduction_text = 'Вступительное видео'
 course_part_list = '"{course_type}"'
 chosen_course_type = 'Вы выбрали {course_type}.'
 link_description = '\n\nСсылка будет действительна еще {time}'

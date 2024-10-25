@@ -14,6 +14,7 @@ def user_main_menu_keyboard():
     course = utils.COURSE
     buttons = [
         [InlineKeyboardButton(text=config.buttons.about, callback_data=MainMenuCallback(data="about").pack())],
+        [InlineKeyboardButton(text=config.buttons.introduction, callback_data=MainMenuCallback(data='introduction').pack())],
         [InlineKeyboardButton(text=config.buttons.course, callback_data=CourseCallback(data=course.id).pack())]
     ]
 

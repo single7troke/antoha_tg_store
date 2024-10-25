@@ -19,6 +19,7 @@ class Buttons(BaseSettings):
     course_type: Dict[str, str] = {'standard': 'Базовый курс', 'with_support': 'Курс с проверкой домашних заданий'}
     course: str = 'Курс'
     download: str = 'Скачать'
+    introduction: str = 'Вступительное видео'
 
 
 class BotConfig(BaseSettings):
@@ -60,6 +61,7 @@ class Config(BaseSettings):
     server_ip: str = ""
     server_url: str
     path_to_files: str = '/var/www/app/files'
+    intro_video_path: str
     secret_key: str
     sales_start_dt: datetime
     stop_selling_course_with_support_dt: datetime
