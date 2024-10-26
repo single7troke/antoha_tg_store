@@ -6,15 +6,28 @@ help:
 run_dev:
 	docker-compose -f config/dev/docker-compose.yml up --build
 
+run_prod:
+	docker-compose -f config/prod/docker-compose.yml up --build
+
 stop_dev:
 	docker-compose -f config/dev/docker-compose.yml down --remove-orphans
+
+stop_dev:
+	docker-compose -f config/prod/docker-compose.yml down --remove-orphans
 
 restart_dev_bot:
 	docker restart dev-bot-1
 
+restart_dev_bot:
+	docker restart prod-bot-1
+
 build_dev:
 	docker image rm dev-bot
-	docker-compose -f config/dev/docker-compose.yml buildbuild_dev:
+	docker-compose -f config/dev/docker-compose.yml build
+
+build_prod:
+	docker image rm dev-bot
+	docker-compose -f config/prod/docker-compose.yml build
 
 rebuild:
 	docker image rm dev-bot
