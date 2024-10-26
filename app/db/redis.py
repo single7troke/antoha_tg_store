@@ -69,6 +69,27 @@ class RedisDB(AbstractCache):
         data = await self.redis.delete(user_id)
         return data
 
+    @retry(retry=retry_if_exception_type(ConnectionError),
+           wait=wait_exponential(),
+           stop=stop_after_delay(15),
+           after=after_log(logger, logging.INFO),
+           retry_error_callback=no_connection)
+    async def increase(self, key: str) -> int:
+        data = await self.redis.incr(key, 1)
+        return data
+
+    @retry(retry=retry_if_exception_type(ConnectionError),
+           wait=wait_exponential(),
+           stop=stop_after_delay(15),
+           after=after_log(logger, logging.INFO),
+           retry_error_callback=no_connection)
+    async def find_all_with(self, key_part: str) -> list:
+        result = list()
+        async for key in self.redis.scan_iter(f'{key_part}*'):
+            result.append(key)
+
+        return result
+
 
 def get_redis_db(redis: Redis = Depends(get_redis)):
     return RedisDB(redis)

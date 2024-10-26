@@ -30,13 +30,17 @@ def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
 
 @router.post("", description="Payment callback")  # TODO сделать ограничение на доступ к этому хендлеру
 async def payment_callback(
+        request: Request,
         data: Dict[Any, Any],
         cache: RedisDB = Depends(get_redis_db),
-        credentials: HTTPBasicCredentials = Depends(verify_credentials)
 ):
+    domain = request.url.hostname
+    full_url = str(request.url)
+    print(domain)
+    print(full_url)
+
     payment_data = data['object']
-    print(payment_data)
-    user_id = payment_data['metadata']['tg_user_id']
+    user_id = payment_data['metadata']['tg_id']
     price_type = payment_data['metadata']['price_type']
     ts = payment_data['metadata']['ts']
     course_id = int(payment_data['metadata']['course_id'])
@@ -46,21 +50,18 @@ async def payment_callback(
     data_from_cache = await cache.get(key)
     user = bytes_to_user(data_from_cache)
 
-    user.courses[course_id].payment_data = payment_data
-    await cache.create(key, pickle.dumps(user))
+    if user.courses[course_id].paid:
+        # TODO если статус succeeded нужна проверка что оплатил пользователь
+        #  и если он оплатил курс еще раз(
+        #  это возможно если в браузере осталась ссылка на оплату рассширенного курса, а он платалил обычный,
+        #  а потом оплатил еще и расширенный),то вернуть платеж
+        return {'status': 'ok'}
+
+    if payment_data['status'] == 'succeeded':
+        # TODO либо тут отменять второй созданный платеж если он создан и если это вообще можно сделать.
+        # TODO отслеживать покупку расширенного курса
+        user.courses[course_id].paid = price_type
+        user.courses[course_id].payment_ids[price_type] = payment_data['id']
+        await cache.create(key, pickle.dumps(user))
 
     return {'status': 'ok'}
-
-
-# @router.get("", description="Return user's role if user exists, else False")
-# async def get_user(request: Request, cache: RedisDB = Depends(get_redis_db)):
-#     print(cache.redis)
-#     data = await cache.get('key')
-#     data = pickle.loads(data)
-#
-#     return {
-#         # 'qwer': request.headers,
-#         #     'body': await request.body(),
-#         #     'items': request.items,
-#             'data': data,
-#             }
