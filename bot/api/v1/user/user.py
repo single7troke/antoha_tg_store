@@ -42,6 +42,27 @@ async def main_menu(message: types.Message):
 async def main_menu_callback_handler(callback: types.CallbackQuery, callback_data: cb.MainMenuCallback):
     if callback_data.data == 'about':
         await about(callback.message)
+    elif callback_data.data == 'introduction':
+        cache = get_redis_db()
+        data_from_cache = await cache.get('intro_video_data')
+        intro_video_data = pickle.loads(data_from_cache) if data_from_cache else None
+        response = await callback.bot.send_video(
+            chat_id=callback.message.chat.id,
+            caption=texts.introduction_text,
+            width=1280,
+            height=720,
+            video=intro_video_data['file_id'] if intro_video_data else FSInputFile(
+                config.path_to_files + config.intro_video_path,
+                filename=f'introduction_video',
+                chunk_size=4096
+            ),
+            reply_markup=kb.back_button('introduction'),
+            request_timeout=30
+        )
+        if not intro_video_data:
+            await cache.create(object_id='intro_video_data', data=pickle.dumps(response.video.dict()))
+
+        await utils.clear_messages(callback.bot, callback.message.chat.id, response.message_id - 1)
 
 
 @router.callback_query(cb.CourseCallback.filter())
@@ -453,5 +474,8 @@ async def back_button_callback(
             ),
             reply_markup=kb.course_part_keyboard(course_id, part_id)
         )
+    elif 'introduction' in callback_data.data:
+        await main_menu(callback.message)
+        from_id = callback.message.message_id
 
     await utils.clear_messages(callback.bot, callback.message.chat.id, from_id)
