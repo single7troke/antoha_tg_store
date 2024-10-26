@@ -3,6 +3,7 @@ ENV PYTHONUNBUFFERED 1
 COPY ./ /app
 WORKDIR /app
 
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt --no-cache-dir
 
 EXPOSE 8000
