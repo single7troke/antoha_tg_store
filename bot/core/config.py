@@ -29,6 +29,10 @@ class BotConfig(BaseSettings):
     name: str = 'bestbassbot'
     link: str = f'https://t.me/{name}'
     group_id: int
+    webhook_path: str = ''
+
+    admin_commands: list = ["admin", "user_list", "new_user"]
+    admin_roles: list = ["admin", "superuser"]
 
 
 class AppConfig(BaseSettings):
@@ -53,14 +57,11 @@ class Payment(BaseSettings):
 
 class Config(BaseSettings):
     log_lvl: int = logging.INFO
-    admin_commands: list = ["admin", "user_list", "new_user"]
-    admin_roles: list = ["admin", "superuser"]
     base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    server_ip: str
     web_app_url: str = "http://app:8000/api/v1/"
     path_to_pem_file: str = "/etc/ssl/certs/public.pem"
-    server_ip: str = ""
-    server_url: str
-    path_to_files: str = '/var/www/app/files'
+    path_to_files: str = '/var/www/course/files'
     intro_video_path: str
     secret_key: str
     sales_start_dt: datetime

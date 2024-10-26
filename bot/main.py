@@ -80,7 +80,7 @@ async def webhook_setup(bot: Bot):
         await bot.delete_webhook()
         await set_commands(bot)
         cert = FSInputFile(config.path_to_pem_file)
-        await bot.set_webhook(url=config.server_url,
+        await bot.set_webhook(url=f'https://{config.server_ip}{config.bot.webhook_path}',
                               ip_address=config.server_ip,
                               certificate=cert)
         info = await bot.get_webhook_info()
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     if webhook:
         dp.startup.register(webhook_setup)
         app = web.Application()
-        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/best_bass_webhook")
+        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=config.bot.webhook_path)
         setup_application(app, dp, bot=bot)
         web.run_app(app)
     else:

@@ -9,7 +9,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8443:8443"
     networks:
       - antoha_store
 
@@ -30,7 +29,7 @@ services:
       - .env
     volumes:
       - ../../app:/app
-      - $DOWNLOAD_FILES:/var/www/app/download_files
+      - $DOWNLOAD_FILES:/var/www/course/files
     networks:
       - antoha_store
     command: python3 main.py
@@ -43,7 +42,7 @@ services:
       - .env
     volumes:
       - ../../bot:/bot
-      - $DOWNLOAD_FILES:/var/www/app/files
+      - $DOWNLOAD_FILES:/var/www/course/files
       - ../certs/public.pem:/etc/ssl/certs/public.pem:ro
     ports:
       - "8081:8081"

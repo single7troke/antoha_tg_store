@@ -32,7 +32,7 @@ async def get(secret_str: str, cache: RedisDB = Depends(get_redis_db)):
 
     user_id, course_id, part_id = get_data_from_link_key(link_key)
     file_name = f'part_{part_id}.zip'
-    file_path = os.path.join(config.app.path_to_files, course_id, file_name)
+    file_path = os.path.join(config.path_to_files, course_id, file_name)
     if os.path.isfile(file_path):
         return FileResponse(status_code=200, path=file_path, filename=file_name)
 
