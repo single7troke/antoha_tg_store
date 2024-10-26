@@ -74,6 +74,14 @@ class RedisDB(AbstractCache):
         return data
 
 
+redis_db: RedisDB | None = None
+
+
 def get_redis_db():
-    redis: Redis = get_redis()
-    return RedisDB(redis)
+    global redis_db
+    connection = get_redis()
+    if not redis:
+        raise Exception('No Redis connection')  # TODO это временное решение, нужно переделать
+    if not redis_db:
+        redis_db = RedisDB(connection)
+    return redis_db
