@@ -18,7 +18,7 @@ config = get_config()
 
 def get_download_link(link_key: str) -> str:
     encrypted_link_key = encrypt(link_key)
-    link = f'{config.server_url}/api/v1/files/{encrypted_link_key}'
+    link = f'http://{config.server_ip}/api/v1/files/{encrypted_link_key}'
     return link
 
 

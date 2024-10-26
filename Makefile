@@ -12,21 +12,21 @@ run_prod:
 stop_dev:
 	docker-compose -f config/dev/docker-compose.yml down --remove-orphans
 
-stop_dev:
+stop_prod:
 	docker-compose -f config/prod/docker-compose.yml down --remove-orphans
 
 restart_dev_bot:
 	docker restart dev-bot-1
 
-restart_dev_bot:
+restart_prod_bot:
 	docker restart prod-bot-1
 
-build_dev:
+build_dev_bot:
 	docker image rm dev-bot
 	docker-compose -f config/dev/docker-compose.yml build
 
-build_prod:
-	docker image rm dev-bot
+build_prod_bot:
+	docker image rm prod-bot
 	docker-compose -f config/prod/docker-compose.yml build
 
 rebuild:

@@ -9,7 +9,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8443:8443"
     networks:
       - antoha_store
 
@@ -26,11 +25,11 @@ services:
     user: "1000:1000"
     build:
       context: ../../app
-    volumes:
-      - ../../app:/app
-      - $DOWNLOAD_FILES:/var/www/app/download_files
     env_file:
       - .env
+    volumes:
+      - ../../app:/app
+      - $DOWNLOAD_FILES:/var/www/course/files
     networks:
       - antoha_store
     command: python3 main.py
@@ -39,12 +38,12 @@ services:
     user: "1000:1000"
     build:
       context: ../../bot
-    volumes:
-      - ../../bot:/bot
-      - $DOWNLOAD_FILES:/var/www/app/files
-      - ../certs/public.pem:/etc/ssl/certs/public.pem:ro
     env_file:
       - .env
+    volumes:
+      - ../../bot:/bot
+      - $DOWNLOAD_FILES:/var/www/course/files
+      - ../certs/public.pem:/etc/ssl/certs/public.pem:ro
     ports:
       - "8081:8081"
     networks:

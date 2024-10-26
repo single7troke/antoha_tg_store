@@ -52,21 +52,21 @@ async def set_commands(bot: Bot):
 
 
 async def create_redis_client():
-    client = await aioredis.from_url(
-        url=f"redis://{config.cache.host}:{config.cache.port}",
-        encoding="utf-8",
-        # decode_responses=True
-    )
-    return client
+    logging.warning('Creating redis connection')
+    try:
+        client = await aioredis.from_url(
+            url=f"redis://{config.cache.host}:{config.cache.port}",
+            encoding="utf-8",
+            # decode_responses=True
+        )
+        return client
+    except Exception as e:
+        raise e
 
 
 async def polling_setup(bot: Bot, dp: Dispatcher):
     try:
         logger.info('Starting in polling mode')
-        redis.redis = await create_redis_client()
-        payment_numbet_exists = await redis.redis.exists('payment_number') # TODO поправить имя переменной, добавить такую же проверку на число проданных расширенных курсов.
-        if not payment_numbet_exists:
-            await redis.redis.set('order_number', 0)
         await bot.delete_webhook()
         await set_commands(bot)
         await dp.start_polling(bot)
@@ -80,7 +80,7 @@ async def webhook_setup(bot: Bot):
         await bot.delete_webhook()
         await set_commands(bot)
         cert = FSInputFile(config.path_to_pem_file)
-        await bot.set_webhook(url=config.server_url,
+        await bot.set_webhook(url=f'https://{config.server_ip}{config.bot.webhook_path}',
                               ip_address=config.server_ip,
                               certificate=cert)
         info = await bot.get_webhook_info()
@@ -107,12 +107,19 @@ if __name__ == '__main__':
     # dp.message.middleware(AdminAccessMiddleware())
     # dp.message.outer_middleware(UserAccessMiddleware())
 
+    @dp.startup()
+    async def on_startup(*args, **kwargs):
+        redis.redis = await create_redis_client()
+        payment_number_exists = await redis.redis.exists('payment_number')  # TODO добавить такую же проверку на число проданных расширенных курсов.
+        if not payment_number_exists:
+            await redis.redis.set('order_number', 0)
+
     webhook = args.webhook
     if webhook:
         dp.startup.register(webhook_setup)
         app = web.Application()
-        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/best_bass_webhook")
+        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=config.bot.webhook_path)
         setup_application(app, dp, bot=bot)
-        web.run_app(app)
+        web.run_app(app, host='0.0.0.0', port=8081)
     else:
         asyncio.run(polling_setup(bot=bot, dp=dp))
