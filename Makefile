@@ -9,13 +9,13 @@ run_dev:
 run_prod:
 	docker-compose -f config/prod/docker-compose.yml up --build
 
-stop_dev:
+stop_prod:
 	docker-compose -f config/dev/docker-compose.yml down --remove-orphans
 
 stop_dev:
 	docker-compose -f config/prod/docker-compose.yml down --remove-orphans
 
-restart_dev_bot:
+restart_prod_bot:
 	docker restart dev-bot-1
 
 restart_dev_bot:
