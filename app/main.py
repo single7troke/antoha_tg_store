@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 import uvicorn
 
-from api.v1 import payments, files
+from api.v1 import payments, files, user
 from core.config import get_config
 from db import redis
 
@@ -26,8 +26,8 @@ async def startup():
     )
 
 app.include_router(payments.router, prefix="/api/v1/payments", tags=["payments"])
-app.include_router(files.router, prefix="/api/v1/files", tags=["payments"])
-# app.include_router(files.router, prefix="/api/v1/user", tags=["payments"])
+app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
+app.include_router(user.router, prefix="/api/v1/user", tags=["user"])
 
 if __name__ == "__main__":
     uvicorn.run(
