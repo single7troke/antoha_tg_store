@@ -113,6 +113,6 @@ if __name__ == '__main__':
         app = web.Application()
         SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=config.bot.webhook_path)
         setup_application(app, dp, bot=bot)
-        web.run_app(app)
+        web.run_app(app, host='0.0.0.0', port=8081)
     else:
         asyncio.run(polling_setup(bot=bot, dp=dp))
