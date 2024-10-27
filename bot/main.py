@@ -110,9 +110,13 @@ if __name__ == '__main__':
     @dp.startup()
     async def on_startup(*args, **kwargs):
         redis.redis = await create_redis_client()
-        payment_number_exists = await redis.redis.exists('payment_number')  # TODO добавить такую же проверку на число проданных расширенных курсов.
+        receipt_number = await redis.redis.exists('receipt_number')
+        if not receipt_number:
+            await redis.redis.set('receipt_number', 0)
+
+        payment_number_exists = await redis.redis.exists('extended_course_sold_quantity')
         if not payment_number_exists:
-            await redis.redis.set('order_number', 0)
+            await redis.redis.set('extended_course_sold_quantity', 0)
 
     webhook = args.webhook
     if webhook:

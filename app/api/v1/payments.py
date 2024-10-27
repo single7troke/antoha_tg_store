@@ -59,7 +59,8 @@ async def payment_callback(
 
     if payment_data['status'] == 'succeeded':
         # TODO либо тут отменять второй созданный платеж если он создан и если это вообще можно сделать.
-        # TODO отслеживать покупку расширенного курса
+        if price_type == 'extended':
+            await cache.increase('extended_course_sold_quantity')
         user.courses[course_id].paid = price_type
         user.courses[course_id].payment_ids[price_type] = payment_data['id']
         await cache.create(key, pickle.dumps(user))

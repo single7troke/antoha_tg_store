@@ -61,10 +61,10 @@ def course_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def selected_course_prices_keyboard(prices: dict) -> InlineKeyboardMarkup:
+def selected_course_prices_keyboard(prices: dict, extended_course_available: bool) -> InlineKeyboardMarkup:
     buttons = []
     for course_type, price in prices.items():
-        if course_type != 'extended' or not utils.is_extended_course_sale_ended():
+        if course_type != 'extended' or extended_course_available:
             buttons.append(
                 [InlineKeyboardButton(
                     text=config.buttons.buy.format(price=price[:-3]),

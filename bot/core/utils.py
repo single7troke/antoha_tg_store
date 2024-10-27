@@ -75,9 +75,12 @@ def is_sale_open() -> bool:
     return datetime.now(tz) > config.sales_start_dt
 
 
-def is_extended_course_sale_ended() -> bool:
+def is_extended_course_available(sold_quantity: int) -> bool:
     tz = timezone(timedelta(hours=config.time_zone))
-    return datetime.now(tz) > config.stop_selling_course_with_support_dt
+    return (
+            datetime.now(tz) < config.stop_selling_extended_course_dt
+            and sold_quantity < config.extended_course_sell_limit
+    )
 
 
 def load_course_from_descriptor() -> Course:
