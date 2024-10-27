@@ -151,14 +151,19 @@ async def selected_course_prices_callback(
 ):
     logger.info(f'Prices. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
     text = texts.price_description['basic'].format(basic_price=utils.COURSE.prices['basic'][:-3])
-    if not utils.is_extended_course_sale_ended():
+    cache: RedisDB = get_redis_db()
+    extended_course_sold_quantity = await cache.get('extended_course_sold_quantity')
+    extended_course_available = utils.is_extended_course_available(int(extended_course_sold_quantity.decode()))
+
+    if extended_course_available:
         text += texts.price_description['extended'].format(
             extended_price=utils.COURSE.prices['extended'][:-3],
-            end_of_sale_time=config.stop_selling_course_with_support_dt.replace(microsecond=0, tzinfo=None)
+            end_of_sale_time=config.stop_selling_extended_course_dt.replace(microsecond=0, tzinfo=None)
         )
+
     await callback.message.edit_caption(
         caption=text,
-        reply_markup=kb.selected_course_prices_keyboard(utils.COURSE.prices)
+        reply_markup=kb.selected_course_prices_keyboard(utils.COURSE.prices, extended_course_available)
     )
 
 
@@ -277,7 +282,7 @@ async def pay_button_callback(
     payment_link = None
 
     if not payment_data or user_from_cache.email != payment_data.metadata.get('email'):
-        order_number = await cache.increase('order_number')
+        order_number = await cache.increase('receipt_number')
         new_payment = create_payment(user.dict(), utils.COURSE, price_type, user_from_cache.email, order_number)
         payment_link = new_payment.confirmation.confirmation_url
         user_from_cache.courses.get(utils.COURSE.id).payment_ids[price_type] = new_payment.id
@@ -302,7 +307,7 @@ async def pay_button_callback(
             CacheKeyConstructor.payment_issues(user_id=user.id),
             pickle.dumps(user_payment_problems)
         )
-        order_number = await cache.increase('order_number')
+        order_number = await cache.increase('receipt_number')
         new_payment = create_payment(user.dict(), utils.COURSE, price_type, user_from_cache.email, order_number)
         payment_link = new_payment.confirmation.confirmation_url
 
