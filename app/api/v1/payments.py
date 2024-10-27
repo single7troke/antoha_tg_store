@@ -28,7 +28,7 @@ def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
     return credentials.username
 
 
-@router.post("", description="Payment callback")  # TODO сделать ограничение на доступ к этому хендлеру
+@router.post("/yookassa_callback", description="Yookassa callback")  # TODO сделать ограничение на доступ к этому хендлеру
 async def payment_callback(
         request: Request,
         data: Dict[Any, Any],
