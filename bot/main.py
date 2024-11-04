@@ -22,30 +22,10 @@ parser.add_argument('--webhook', action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
 
-async def welcome(message: types.Message):
-    """
-    This handler will be called when user sends `/start` command
-    """
-    await api.main_menu(message)
-
-
-async def description(message: types.Message):
-    """
-    This handler will be called when user sends `/about` command
-    """
-    await message.answer('asdf')
-
-
-async def admin_description(message: types.Message):
-    """
-    This handler will be called when user sends `/admin` command
-    """
-    await message.answer('asf')
-
-
 async def set_commands(bot: Bot):
     commands = [
         BotCommand(command="menu", description="Меню"),
+        BotCommand(command='support', description='Поддержка')
     ]
 
     await bot.set_my_commands(commands=commands)
@@ -101,7 +81,6 @@ if __name__ == '__main__':
     default = DefaultBotProperties(parse_mode='HTML')
     bot = Bot(token=config.bot.token, default=default)
     dp = Dispatcher()
-    dp.message.register(welcome, Command(commands=["start"]))
     dp.include_router(api.user_router)
     dp.include_router(api.admin_router)
     dp.message.middleware(AdminAccessMiddleware())

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # TODO сообщение типа Публичная оферта, когда получил ссылку на оплату.
 
 
-@router.message(Command(commands=('menu',)))
+@router.message(Command(commands=('menu', 'start',)))
 async def main_menu(message: types.Message):
     logger.info(f'Main menu. '
                 f'user_id: {message.from_user.id}, '
@@ -34,6 +34,18 @@ async def main_menu(message: types.Message):
             chunk_size=4096
         ),
         reply_markup=kb.user_main_menu_keyboard()
+    )
+    await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
+
+
+@router.message(Command(commands=('support',)))
+async def support(message: types.Message):
+    logger.info(f'Support menu. '
+                f'user_id: {message.from_user.id}, '
+                f'user_name: {message.from_user.username}')
+    response = await message.bot.send_message(
+        chat_id=message.chat.id,
+        text=texts.support_message.format(user_id=message.from_user.id, username=config.bot.support_address),
     )
     await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
 
