@@ -11,10 +11,10 @@ from aiogram.types import BotCommand, FSInputFile
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
-from api import user_router, main_menu
+import api
 from db import redis
 from core import get_config
-# from middleware.user_access import UserAccessMiddleware, AdminAccessMiddleware
+from middleware.admin_access import AdminAccessMiddleware
 
 config = get_config()
 parser = argparse.ArgumentParser()
@@ -26,7 +26,7 @@ async def welcome(message: types.Message):
     """
     This handler will be called when user sends `/start` command
     """
-    await main_menu(message)
+    await api.main_menu(message)
 
 
 async def description(message: types.Message):
@@ -102,9 +102,9 @@ if __name__ == '__main__':
     bot = Bot(token=config.bot.token, default=default)
     dp = Dispatcher()
     dp.message.register(welcome, Command(commands=["start"]))
-    # dp.message.register(admin_description, Command(commands=["admin"]))
-    dp.include_router(user_router)
-    # dp.message.middleware(AdminAccessMiddleware())
+    dp.include_router(api.user_router)
+    dp.include_router(api.admin_router)
+    dp.message.middleware(AdminAccessMiddleware())
     # dp.message.outer_middleware(UserAccessMiddleware())
 
     @dp.startup()

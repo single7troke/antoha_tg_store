@@ -51,7 +51,7 @@ class RedisDB(AbstractCache):
         data = await self.redis.set(name=object_id, value=data)
         return data
 
-    async def update(self, object_id: str, data: dict) -> None:
+    async def update(self, object_id: str, data: dict | bytes) -> None:
         data = await self.create(object_id, data)
         return data
 
@@ -72,6 +72,18 @@ class RedisDB(AbstractCache):
     async def increase(self, key: str) -> int:
         data = await self.redis.incr(key, 1)
         return data
+
+    @retry(retry=retry_if_exception_type(ConnectionError),
+           wait=wait_exponential(),
+           stop=stop_after_delay(15),
+           after=after_log(logger, logging.INFO),
+           retry_error_callback=no_connection)
+    async def find_all_with(self, key_part: str) -> list:
+        result = list()
+        async for key in self.redis.scan_iter(f'{key_part}*'):
+            result.append(key)
+
+        return result
 
 
 redis_db: RedisDB | None = None

@@ -10,6 +10,14 @@ class CacheKeyConstructor:
         return f'user{cls.separator}{user_id}'
 
     @classmethod
+    def extract_user_id(cls, cache_id: str):
+        result = cache_id.split(cls.separator)
+        if len(result) == 2:
+            return result[1]
+
+        return False
+
+    @classmethod
     def payment(cls, user_id: Union[int, str], payment_id: str):
         return f'payment{cls.separator}{user_id}{cls.separator}{payment_id}'
 

@@ -1,8 +1,9 @@
 import logging
 import os
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Union
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,8 +33,14 @@ class BotConfig(BaseSettings):
     group_id: int
     webhook_path: str = ''
 
-    admin_commands: list = ["admin", "user_list", "new_user"]
+    admin_commands: list = ["admin"]
     admin_roles: list = ["admin", "superuser"]
+    # admins: str
+    admin_list: Union[str, list]
+
+    @field_validator('admin_list')
+    def make_list_from_string(cls, v: str):
+        return [int(i) for i in v.split(',')]
 
 
 class AppConfig(BaseSettings):

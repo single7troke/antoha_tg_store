@@ -40,3 +40,6 @@ class CheckEmailCallback(BaseCallback, prefix='check_email'):
 class EnterEmailCallback(BaseCallback, prefix='confirm_email'):
     pass
 
+
+class AdminMainMenuCallback(BaseCallback, prefix='admin_main_menu'):
+    pass
