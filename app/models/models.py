@@ -34,3 +34,4 @@ class User(BaseModel):
     courses: Dict[int, UserCourse] = dict()
     email: Optional[str] = None
     invite_link: Optional[str] = None
+    tg_user_data: Optional[Dict[Any, Any]] = None

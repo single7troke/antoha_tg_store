@@ -123,7 +123,8 @@ async def selected_course_callback(
         logger.info(f'New user. user_id: {user.id}, user_name: {callback.from_user.username}')
         course = utils.COURSE
         data_to_cache = User(
-            courses={course.id: UserCourse(course=course)}
+            courses={course.id: UserCourse(course=course)},
+            tg_user_data=user.dict()
         )
         await cache.create(
             CacheKeyConstructor.user(user_id=user.id),
