@@ -83,7 +83,7 @@ async def selected_course_callback(
                         f'user_name: {callback.from_user.username}, '
                         f'course_id: {user_course.course.id}, '
                         f'course_type: {user_course.paid}')
-            text = texts.course_description.format(description=user_course.course.description)
+            text = ''
 
             if user_course.paid == 'extended' and not user_from_cache.invite_link:
                 invite_link = await callback.bot.create_chat_invite_link(
@@ -123,7 +123,8 @@ async def selected_course_callback(
         logger.info(f'New user. user_id: {user.id}, user_name: {callback.from_user.username}')
         course = utils.COURSE
         data_to_cache = User(
-            courses={course.id: UserCourse(course=course)}
+            courses={course.id: UserCourse(course=course)},
+            tg_user_data=user.dict()
         )
         await cache.create(
             CacheKeyConstructor.user(user_id=user.id),
