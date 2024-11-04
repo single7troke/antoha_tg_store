@@ -35,8 +35,8 @@ class BotConfig(BaseSettings):
 
     admin_commands: list = ["admin"]
     admin_roles: list = ["admin", "superuser"]
-    # admins: str
     admin_list: Union[str, list]
+    support_address: str
 
     @field_validator('admin_list')
     def make_list_from_string(cls, v: str):
