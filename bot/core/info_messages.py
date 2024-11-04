@@ -2,6 +2,7 @@
 already_paid = 'Вы уже приобрели этот курс'
 pending = 'Ждет оплаты'
 canceled = 'Что-то пошло не так\nВот новая ссылка на оплату'
+receipt_item_description = 'Видео курс: Основы басового грува'
 part = 'Урок'
 course_description = '\n{description}'
 selected_part = ('\t{course_name}.\n\nУрок № {part_id}.\n{description}\n\n'

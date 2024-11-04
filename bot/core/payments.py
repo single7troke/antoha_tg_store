@@ -9,6 +9,7 @@ from yookassa.domain.response import PaymentResponse
 
 from core import get_config
 from models import Course
+from . import texts
 
 config = get_config()
 
@@ -42,7 +43,7 @@ def create_payment(
                     "email": email
                 },
                 "items": [{
-                    "description": "some course description",  # TODO нужно название курса для чека
+                    "description": texts.receipt_item_description,
                     "amount": {
                         "value": course.prices[price_type],
                         "currency": 'RUB'
