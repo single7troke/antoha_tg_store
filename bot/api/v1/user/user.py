@@ -2,7 +2,7 @@ import logging
 import pickle
 import time
 
-from aiogram import types, Router
+from aiogram import types, Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import FSInputFile
@@ -77,12 +77,13 @@ async def selected_course_callback(
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
     if user_from_cache:
         user_course = user_from_cache.courses.get(callback_data.data)
-        if user_course.paid:
+        if user_course.paid or user_course.promo_access:
             logger.info(f'Paid course. '
                         f'user_id: {user.id}, '
                         f'user_name: {callback.from_user.username}, '
                         f'course_id: {user_course.course.id}, '
-                        f'course_type: {user_course.paid}')
+                        f'course_type: {user_course.paid}'
+                        f'promo_access: {user_course.promo_access}')
             text = ''
 
             if user_course.paid == 'extended' and not user_from_cache.invite_link:
@@ -437,7 +438,7 @@ async def catalog(message: types.Message):  # Не используется
     await message.edit_caption(caption=f'Список курсов.', reply_markup=kb.catalog_keyboard())
 
 
-@router.callback_query(cb.BackButtonCallback.filter())
+@router.callback_query(cb.BackButtonCallback.filter(F.data != 'admin_main_menu'))
 async def back_button_callback(
         callback: types.CallbackQuery,
         callback_data: cb.BackButtonCallback,

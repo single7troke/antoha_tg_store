@@ -27,6 +27,7 @@ class Course(Base):
 class UserCourse(BaseModel):
     course: Course
     paid: bool = False
+    promo_access: bool = False
     payment_ids: Dict[str, Optional[str]] = dict()
 
 

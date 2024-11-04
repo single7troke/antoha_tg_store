@@ -161,3 +161,26 @@ def link_to_download_part_keyboard(link_key: str, course_id, part_id, back_to_me
     ]
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def admin_main_menu_keyboard():
+    buttons = [
+        [InlineKeyboardButton(
+            text='Информация о пользователе',
+            callback_data=AdminMainMenuCallback(data='user').pack()
+        )],
+        [InlineKeyboardButton(
+            text='Список пользователей',
+            callback_data=AdminMainMenuCallback(data='user_list').pack()
+        )],
+        [InlineKeyboardButton(
+            text='Информация о платеже',
+            callback_data=AdminMainMenuCallback(data='payment').pack()
+        )]
+        # [InlineKeyboardButton(
+        #     text=config.buttons.back,
+        #     callback_data=BackButtonCallback(data='admin_main_menu').pack()
+        # )]
+    ]
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
