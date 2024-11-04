@@ -119,7 +119,7 @@ def paid_course_keyboard(course: Course, invite_link: Optional[str] = None):
     if invite_link:
         buttons.insert(
             0,
-            [InlineKeyboardButton(text='Перейти в группу', url=invite_link)])  # todo
+            [InlineKeyboardButton(text=config.buttons.home_work, url=invite_link)])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
