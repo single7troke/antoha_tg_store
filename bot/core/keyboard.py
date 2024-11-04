@@ -176,11 +176,11 @@ def admin_main_menu_keyboard():
         [InlineKeyboardButton(
             text='Информация о платеже',
             callback_data=AdminMainMenuCallback(data='payment').pack()
+        )],
+        [InlineKeyboardButton(
+            text='Выдать доступ к курсу',
+            callback_data=AdminMainMenuCallback(data='grant_access').pack()
         )]
-        # [InlineKeyboardButton(
-        #     text=config.buttons.back,
-        #     callback_data=BackButtonCallback(data='admin_main_menu').pack()
-        # )]
     ]
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -36,7 +36,6 @@ class User(BaseModel):
     email: Optional[str] = None
     invite_link: Optional[str] = None
     tg_user_data: Optional[Dict[Any, Any]] = None
-    # Todo добавить фичу с доступом к скачиванию без оплаты
 
 
 class Link(BaseModel):

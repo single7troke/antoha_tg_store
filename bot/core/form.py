@@ -11,3 +11,7 @@ class UserId(StatesGroup):
 
 class PaymentId(StatesGroup):
     payment_id = State()
+
+
+class GrantAccessToUser(StatesGroup):
+    user_id = State()

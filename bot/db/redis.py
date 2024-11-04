@@ -51,7 +51,7 @@ class RedisDB(AbstractCache):
         data = await self.redis.set(name=object_id, value=data)
         return data
 
-    async def update(self, object_id: str, data: dict) -> None:
+    async def update(self, object_id: str, data: dict | bytes) -> None:
         data = await self.create(object_id, data)
         return data
 
