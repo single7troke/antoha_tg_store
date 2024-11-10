@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 
 # TODO добавить описание к каждой функции
 
-# TODO сообщение типа Публичная оферта, когда получил ссылку на оплату.
-
 
 @router.message(Command(commands=('menu', 'start',)))
 async def main_menu(message: types.Message):
@@ -356,16 +354,19 @@ async def pay_button_callback(
 
     if not payment_link:
         await callback.message.edit_caption(
-            caption='Error', # TODO сделать текст ошибки если платеж неудалось создать + картинку с ошибкой(но тогда придется не edit_caption а edit_media)
+            caption='Извините, возникла проблема,\nпопробуйте позже.', # TODO сделать текст ошибки если платеж неудалось создать + картинку с ошибкой(но тогда придется не edit_caption а edit_media)
             reply_markup=kb.back_button('menu')
         )
-        logger.info(f'can\'t create payment. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
+        logger.error(f'Payment ERROR. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
         return
 
-    await callback.message.edit_caption(
-        caption=texts.chosen_course_type.format(
+    text = texts.chosen_course_type.format(
             course_type='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий\"'
-        ),
+        )
+    text += texts.offer_rules
+
+    await callback.message.edit_caption(
+        caption=text,
         reply_markup=kb.pay_course_keyboard(payment_link)
     )
 
@@ -469,7 +470,7 @@ async def catalog(message: types.Message):  # Не используется
     await message.edit_caption(caption=f'Список курсов.', reply_markup=kb.catalog_keyboard())
 
 
-@router.callback_query(cb.BackButtonCallback.filter(F.data != 'admin_main_menu'))
+@router.callback_query(cb.BackButtonCallback.filter(F.data != 'admin_main_menu'))  # TODO переделать? кнопка назад идет не с колбеком BackButtonCallback.
 async def back_button_callback(
         callback: types.CallbackQuery,
         callback_data: cb.BackButtonCallback,
