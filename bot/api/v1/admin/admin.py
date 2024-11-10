@@ -1,7 +1,7 @@
 import json
 import logging
 import pickle
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from aiogram import types, Router, F
 from aiogram.filters import Command
@@ -168,6 +168,56 @@ async def grant_access_to_user(message: types.Message, state: FSMContext):
             text = f'Access granted to user with id: {user_id}'
         else:
             text = 'User has already purchased the course'
+
+    else:
+        text = 'User not found'
+
+    response = await message.bot.send_message(
+        chat_id=message.chat.id,
+        text=text,
+        reply_markup=kb.back_button('admin_main_menu')
+    )
+
+    await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
+
+
+@router.callback_query(cb.AdminMainMenuCallback.filter(F.data == 'extend_access'))
+async def extend_access_to_the_course(
+        callback: types.CallbackQuery,
+        callback_data: cb.MainMenuCallback,
+        state: FSMContext
+):
+    await state.clear()
+    await state.set_state(form.ExtendAccessToUser.user_id)
+    await callback.message.edit_text(
+        text='Enter user id, to extend access',
+        reply_markup=kb.back_button('admin_main_menu')
+    )
+
+
+@router.message(form.ExtendAccessToUser.user_id)
+async def grant_access_to_user(message: types.Message, state: FSMContext):
+    user_id = message.text
+    await state.clear()
+    cache: RedisDB = get_redis_db()
+    data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user_id))
+    user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
+
+    if user_from_cache:
+        if user_from_cache.courses[1001].paid or user_from_cache.courses[1001].promo_access:
+            captured_at = user_from_cache.courses[1001].captured_at
+            updated_captured_at = datetime.fromisoformat(
+                captured_at.replace("Z", "+00:00")
+            ) + timedelta(days=1)
+
+            user_from_cache.courses[1001].captured_at = updated_captured_at.isoformat()
+            await cache.update(
+                CacheKeyConstructor.user(user_id),
+                pickle.dumps(user_from_cache)
+            )
+            text = f'Access extended to user with id: {user_id}'
+        else:
+            text = 'User has not access to the course'
 
     else:
         text = 'User not found'

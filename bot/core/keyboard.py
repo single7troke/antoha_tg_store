@@ -185,6 +185,10 @@ def admin_main_menu_keyboard():
         [InlineKeyboardButton(
             text='Выдать доступ к курсу',
             callback_data=AdminMainMenuCallback(data='grant_access').pack()
+        )],
+        [InlineKeyboardButton(
+            text='Продлить доступ к курсу',
+            callback_data=AdminMainMenuCallback(data='extend_access').pack()
         )]
     ]
 
