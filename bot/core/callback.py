@@ -43,3 +43,7 @@ class EnterEmailCallback(BaseCallback, prefix='confirm_email'):
 
 class AdminMainMenuCallback(BaseCallback, prefix='admin_main_menu'):
     pass
+
+
+class LessonsDescriptionCallback(BaseCallback, prefix='lessons_description'):
+    pass

@@ -181,6 +181,25 @@ async def selected_course_prices_callback(
     )
 
 
+@router.callback_query(cb.LessonsDescriptionCallback.filter())
+async def selected_course_lessons_description_callback(
+        callback: types.CallbackQuery,
+        callback_data: cb.CoursePricesCallback,
+):
+    logger.info(f'Lessons description. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
+    text = ''
+    for lesson_num, desc in utils.COURSE.parts.items():
+        text += f'<b>Урок {lesson_num}</b>\n{desc}\n'
+
+    response = await callback.bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=text,
+        reply_markup=kb.back_button('lessons_description')
+    )
+
+    await utils.clear_messages(callback.bot, callback.message.chat.id, response.message_id - 1)
+
+
 @router.callback_query(cb.EnterEmailCallback.filter())
 async def enter_email_callback(
         callback: types.CallbackQuery,
@@ -473,6 +492,18 @@ async def back_button_callback(
             caption=texts.course_description.format(description=utils.COURSE.description),
             reply_markup=kb.course_keyboard()
         )
+    elif callback_data.data == 'lessons_description':
+        response = await callback.bot.send_photo(
+            chat_id=callback.message.chat.id,
+            photo=FSInputFile(
+                config.path_to_files + '/image/horizontal.jpg',
+                filename=f'pic_{time.time()}',
+                chunk_size=4096
+            ),
+            caption=texts.course_description.format(description=utils.COURSE.description),
+            reply_markup=kb.course_keyboard()
+        )
+        from_id = response.message_id - 1
     elif 'paid_course' in callback_data.data:
         # course_id = utils.get_course_id_and_course_part_id(
         #     callback_data.data.replace('paid_course_', '')

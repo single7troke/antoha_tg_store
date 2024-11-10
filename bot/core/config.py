@@ -22,6 +22,7 @@ class Buttons(BaseSettings):
     download: str = 'Скачать'
     introduction: str = 'Вступительное видео'
     home_work: str = 'Проверка домашних заданий'
+    lessons_description: str = 'Описание уроков'
 
 
 class BotConfig(BaseSettings):
