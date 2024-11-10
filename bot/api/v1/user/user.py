@@ -1,6 +1,7 @@
 import logging
 import pickle
 import time
+from datetime import datetime, timedelta, timezone
 
 from aiogram import types, Router, F
 from aiogram.filters import Command
@@ -17,8 +18,6 @@ config = get_config()
 logger = logging.getLogger(__name__)
 
 # TODO добавить описание к каждой функции
-
-# TODO сообщение типа Публичная оферта, когда получил ссылку на оплату.
 
 
 @router.message(Command(commands=('menu', 'start',)))
@@ -87,9 +86,10 @@ async def selected_course_callback(
 
     data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
+    captured_at = None
     if user_from_cache:
         user_course = user_from_cache.courses.get(callback_data.data)
-        if user_course.paid or user_course.promo_access:
+        if user_course and (user_course.paid or user_course.promo_access):
             logger.info(f'Paid course. '
                         f'user_id: {user.id}, '
                         f'user_name: {callback.from_user.username}, '
@@ -106,6 +106,7 @@ async def selected_course_callback(
                 user_from_cache.invite_link = invite_link.invite_link
                 await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
 
+            captured_at = user_course.captured_at
             keyboard = kb.paid_course_keyboard(user_course.course, user_from_cache.invite_link)
 
         elif course_type := utils.course_already_paid(user_from_cache):
@@ -116,7 +117,9 @@ async def selected_course_callback(
                 f'course_id: {user_course.course.id}, '
                 f'course_type: {user_course.paid}'
             )
+            captured_at = utils.get_payment_captured_at(user_from_cache, course_type)
             user_from_cache.courses.get(callback_data.data).paid = course_type
+            user_from_cache.courses.get(callback_data.data).captured_at = captured_at
             text = texts.course_description.format(description=user_course.course.description)
 
             if course_type == 'extended':
@@ -152,6 +155,20 @@ async def selected_course_callback(
             sales_start_dt=config.sales_start_dt.replace(microsecond=0, tzinfo=None)
         )
 
+    if captured_at:
+        moscow_tz = timezone(timedelta(hours=config.time_zone))
+        can_download_before = datetime.fromisoformat(
+            captured_at.replace("Z", "+00:00")
+        ) + timedelta(
+            days=config.days_to_download_course_after_payment,
+            hours=config.time_zone
+        )
+        if datetime.now(moscow_tz).date() <= can_download_before.replace(tzinfo=moscow_tz).date():
+            text += texts.paid_course_expire_information_msg.format(time=can_download_before.strftime("%d %b %Y"))
+        else:
+            text = texts.paid_course_expired_msg
+            keyboard = kb.back_button('menu')
+
     await callback.message.edit_caption(
         caption=text,
         reply_markup=keyboard
@@ -179,6 +196,25 @@ async def selected_course_prices_callback(
         caption=text,
         reply_markup=kb.selected_course_prices_keyboard(utils.COURSE.prices, extended_course_available)
     )
+
+
+@router.callback_query(cb.LessonsDescriptionCallback.filter())
+async def selected_course_lessons_description_callback(
+        callback: types.CallbackQuery,
+        callback_data: cb.CoursePricesCallback,
+):
+    logger.info(f'Lessons description. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
+    text = ''
+    for lesson_num, desc in utils.COURSE.parts.items():
+        text += f'<b>Урок {lesson_num}</b>\n{desc}\n'
+
+    response = await callback.bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=text,
+        reply_markup=kb.back_button('lessons_description')
+    )
+
+    await utils.clear_messages(callback.bot, callback.message.chat.id, response.message_id - 1)
 
 
 @router.callback_query(cb.EnterEmailCallback.filter())
@@ -337,16 +373,19 @@ async def pay_button_callback(
 
     if not payment_link:
         await callback.message.edit_caption(
-            caption='Error', # TODO сделать текст ошибки если платеж неудалось создать + картинку с ошибкой(но тогда придется не edit_caption а edit_media)
+            caption='Извините, возникла проблема,\nпопробуйте позже.', # TODO сделать текст ошибки если платеж неудалось создать + картинку с ошибкой(но тогда придется не edit_caption а edit_media)
             reply_markup=kb.back_button('menu')
         )
-        logger.info(f'can\'t create payment. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
+        logger.error(f'Payment ERROR. user_id: {callback.from_user.id}, user_name: {callback.from_user.username}')
         return
 
-    await callback.message.edit_caption(
-        caption=texts.chosen_course_type.format(
+    text = texts.chosen_course_type.format(
             course_type='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий\"'
-        ),
+        )
+    text += texts.offer_rules
+
+    await callback.message.edit_caption(
+        caption=text,
         reply_markup=kb.pay_course_keyboard(payment_link)
     )
 
@@ -450,7 +489,7 @@ async def catalog(message: types.Message):  # Не используется
     await message.edit_caption(caption=f'Список курсов.', reply_markup=kb.catalog_keyboard())
 
 
-@router.callback_query(cb.BackButtonCallback.filter(F.data != 'admin_main_menu'))
+@router.callback_query(cb.BackButtonCallback.filter(F.data != 'admin_main_menu'))  # TODO переделать? кнопка назад идет не с колбеком BackButtonCallback.
 async def back_button_callback(
         callback: types.CallbackQuery,
         callback_data: cb.BackButtonCallback,
@@ -473,6 +512,18 @@ async def back_button_callback(
             caption=texts.course_description.format(description=utils.COURSE.description),
             reply_markup=kb.course_keyboard()
         )
+    elif callback_data.data == 'lessons_description':
+        response = await callback.bot.send_photo(
+            chat_id=callback.message.chat.id,
+            photo=FSInputFile(
+                config.path_to_files + '/image/horizontal.jpg',
+                filename=f'pic_{time.time()}',
+                chunk_size=4096
+            ),
+            caption=texts.course_description.format(description=utils.COURSE.description),
+            reply_markup=kb.course_keyboard()
+        )
+        from_id = response.message_id - 1
     elif 'paid_course' in callback_data.data:
         # course_id = utils.get_course_id_and_course_part_id(
         #     callback_data.data.replace('paid_course_', '')

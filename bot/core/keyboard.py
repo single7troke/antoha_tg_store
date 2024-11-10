@@ -55,6 +55,11 @@ def course_keyboard() -> InlineKeyboardMarkup:
                 text=config.buttons.prices, callback_data=CoursePricesCallback(data='prices').pack()
             )]
         )
+        buttons.append(
+            [InlineKeyboardButton(
+                text=config.buttons.lessons_description, callback_data=LessonsDescriptionCallback(data='lessons_description').pack()
+            )]
+        )
 
     buttons.append([InlineKeyboardButton(text=config.buttons.back, callback_data=BackButtonCallback(data='menu').pack())])
 
@@ -180,6 +185,10 @@ def admin_main_menu_keyboard():
         [InlineKeyboardButton(
             text='Выдать доступ к курсу',
             callback_data=AdminMainMenuCallback(data='grant_access').pack()
+        )],
+        [InlineKeyboardButton(
+            text='Продлить доступ к курсу',
+            callback_data=AdminMainMenuCallback(data='extend_access').pack()
         )]
     ]
 

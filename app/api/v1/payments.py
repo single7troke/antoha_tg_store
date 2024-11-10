@@ -1,7 +1,7 @@
 import pickle
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
 from starlette import status
 
@@ -30,15 +30,9 @@ def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
 
 @router.post("/yookassa_callback", description="Yookassa callback")  # TODO сделать ограничение на доступ к этому хендлеру
 async def payment_callback(
-        request: Request,
         data: Dict[Any, Any],
         cache: RedisDB = Depends(get_redis_db),
 ):
-    domain = request.url.hostname
-    full_url = str(request.url)
-    print(domain)
-    print(full_url)
-
     payment_data = data['object']
     user_id = payment_data['metadata']['tg_id']
     price_type = payment_data['metadata']['price_type']
@@ -62,6 +56,7 @@ async def payment_callback(
         if price_type == 'extended':
             await cache.increase('extended_course_sold_quantity')
         user.courses[course_id].paid = price_type
+        user.courses[course_id].captured_at = payment_data['captured_at']
         user.courses[course_id].payment_ids[price_type] = payment_data['id']
         await cache.create(key, pickle.dumps(user))
 

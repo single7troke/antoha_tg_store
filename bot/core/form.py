@@ -15,3 +15,7 @@ class PaymentId(StatesGroup):
 
 class GrantAccessToUser(StatesGroup):
     user_id = State()
+
+
+class ExtendAccessToUser(StatesGroup):
+    user_id = State()
