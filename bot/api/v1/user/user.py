@@ -1,6 +1,7 @@
 import logging
 import pickle
 import time
+from datetime import datetime, timedelta, timezone
 
 from aiogram import types, Router, F
 from aiogram.filters import Command
@@ -85,9 +86,10 @@ async def selected_course_callback(
 
     data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
+    captured_at = None
     if user_from_cache:
         user_course = user_from_cache.courses.get(callback_data.data)
-        if user_course.paid or user_course.promo_access:
+        if user_course and (user_course.paid or user_course.promo_access):
             logger.info(f'Paid course. '
                         f'user_id: {user.id}, '
                         f'user_name: {callback.from_user.username}, '
@@ -104,6 +106,7 @@ async def selected_course_callback(
                 user_from_cache.invite_link = invite_link.invite_link
                 await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
 
+            captured_at = user_course.captured_at
             keyboard = kb.paid_course_keyboard(user_course.course, user_from_cache.invite_link)
 
         elif course_type := utils.course_already_paid(user_from_cache):
@@ -114,7 +117,9 @@ async def selected_course_callback(
                 f'course_id: {user_course.course.id}, '
                 f'course_type: {user_course.paid}'
             )
+            captured_at = utils.get_payment_captured_at(user_from_cache, course_type)
             user_from_cache.courses.get(callback_data.data).paid = course_type
+            user_from_cache.courses.get(callback_data.data).captured_at = captured_at
             text = texts.course_description.format(description=user_course.course.description)
 
             if course_type == 'extended':
@@ -149,6 +154,20 @@ async def selected_course_callback(
         text += texts.sales_start_dt.format(
             sales_start_dt=config.sales_start_dt.replace(microsecond=0, tzinfo=None)
         )
+
+    if captured_at:
+        moscow_tz = timezone(timedelta(hours=config.time_zone))
+        can_download_before = datetime.fromisoformat(
+            captured_at.replace("Z", "+00:00")
+        ) + timedelta(
+            days=config.days_to_download_course_after_payment,
+            hours=config.time_zone
+        )
+        if datetime.now(moscow_tz).date() <= can_download_before.replace(tzinfo=moscow_tz).date():
+            text += texts.paid_course_expire_information_msg.format(time=can_download_before.strftime("%d %b %Y"))
+        else:
+            text = texts.paid_course_expired_msg
+            keyboard = kb.back_button('menu')
 
     await callback.message.edit_caption(
         caption=text,

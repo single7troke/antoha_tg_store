@@ -76,6 +76,7 @@ class Config(BaseSettings):
     sales_start_dt: datetime
     stop_selling_extended_course_dt: datetime
     extended_course_sell_limit: int
+    days_to_download_course_after_payment: int = 31
     time_zone: int
     buttons: Buttons = Buttons()
     bot: BotConfig = BotConfig()

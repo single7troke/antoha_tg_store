@@ -70,6 +70,12 @@ def course_already_paid(user: User):
             return course_type
 
 
+def get_payment_captured_at(user: User, course_type: str):
+    payment_id = user.courses[COURSE.id].payment_ids[course_type]
+    payment = get_payment(payment_id)
+    return payment.captured_at
+
+
 def is_sale_open() -> bool:
     tz = timezone(timedelta(hours=config.time_zone))
     return datetime.now(tz) > config.sales_start_dt

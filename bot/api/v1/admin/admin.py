@@ -1,12 +1,11 @@
 import json
 import logging
 import pickle
-import time
+from datetime import datetime
 
 from aiogram import types, Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import FSInputFile
 
 from core import *
 from core.utils import bytes_to_user
@@ -161,6 +160,7 @@ async def grant_access_to_user(message: types.Message, state: FSMContext):
     if user_from_cache:
         if not user_from_cache.courses[1001].paid:
             user_from_cache.courses[1001].promo_access = True
+            user_from_cache.courses[1001].captured_at = datetime.now().isoformat()
             await cache.update(
                 CacheKeyConstructor.user(user_id),
                 pickle.dumps(user_from_cache)

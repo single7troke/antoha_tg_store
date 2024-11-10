@@ -1,3 +1,5 @@
+import datetime
+
 from pydantic import BaseModel, PositiveInt
 from typing import Optional, Any, Dict
 
@@ -29,6 +31,7 @@ class UserCourse(BaseModel):
     paid: bool = False
     promo_access: bool = False
     payment_ids: Dict[str, Optional[str]] = dict()
+    captured_at: str = None
 
 
 class User(BaseModel):
