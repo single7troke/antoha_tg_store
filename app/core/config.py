@@ -28,6 +28,7 @@ class Config(BaseSettings):
     # path_to_pem_file: str = "/etc/ssl/certs/RPUBLIC.pem"
     server_ip: str = ""
     secret_key: str
+    dev_mode: bool = False
     db: DB = DB()
     cache: Cache = Cache()
     payment: Payment = Payment()
