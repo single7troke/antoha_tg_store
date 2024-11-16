@@ -17,10 +17,7 @@ config = get_config()
 
 @router.get('/{secret_str}', response_class=FileResponse)
 async def get(secret_str: str, cache: RedisDB = Depends(get_redis_db)):
-    # TODO проверяем есть ли запись в редис и не вышло ли время.
-    # TODO делать ли фронт??? и нужно локально уже сделать nginx
-    # TODO настроить ngrok чтоб настроить колбек от телеги
-    # TODO 1. nginx 2. callback 3. доделать этот хендлер.
+    # TODO делать ли фронт???
     link_key = decrypt(secret_str)
     link_info = await cache.get(link_key)
     if not link_info:
