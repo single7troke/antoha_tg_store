@@ -152,7 +152,7 @@ async def selected_course_callback(
     if not utils.is_sale_open():
         logger.info(f'Sale not open. user_id: {user.id}, user_name: {callback.from_user.username}')
         text += texts.sales_start_dt.format(
-            sales_start_dt=config.sales_start_dt.replace(microsecond=0, tzinfo=None)
+            sales_start_dt=config.sales_start_dt.strftime("%Y-%m-%d %H:%M")
         )
 
     if captured_at:
