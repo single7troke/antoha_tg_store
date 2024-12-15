@@ -87,6 +87,9 @@ async def selected_course_callback(
     data_from_cache = await cache.get(CacheKeyConstructor.user(user_id=user.id))
     user_from_cache = utils.bytes_to_user(data_from_cache) if data_from_cache else None
     captured_at = None
+    download_opened = utils.is_download_open()
+    text = ''
+
     if user_from_cache:
         user_course = user_from_cache.courses.get(callback_data.data)
         if user_course and (user_course.paid or user_course.promo_access):
@@ -96,15 +99,16 @@ async def selected_course_callback(
                         f'course_id: {user_course.course.id}, '
                         f'course_type: {user_course.paid}'
                         f'promo_access: {user_course.promo_access}')
-            text = ''
 
-            if user_course.paid == 'extended' and not user_from_cache.invite_link:
-                invite_link = await callback.bot.create_chat_invite_link(
-                    chat_id=config.bot.group_id,
-                    member_limit=1,
-                )
-                user_from_cache.invite_link = invite_link.invite_link
-                await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
+            if user_course.paid == 'extended':
+                if not user_from_cache.invite_link:
+                    invite_link = await callback.bot.create_chat_invite_link(
+                        chat_id=config.bot.group_id,
+                        member_limit=1,
+                    )
+                    user_from_cache.invite_link = invite_link.invite_link
+                    await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
+                text += texts.invite_link_text
 
             captured_at = user_course.captured_at
             keyboard = kb.paid_course_keyboard(user_course.course, user_from_cache.invite_link)
@@ -128,6 +132,7 @@ async def selected_course_callback(
                     member_limit=1,
                 )
                 user_from_cache.invite_link = invite_link.invite_link
+                text += texts.invite_link_text
 
             keyboard = kb.paid_course_keyboard(user_course.course, user_from_cache.invite_link)
             await cache.create(CacheKeyConstructor.user(user_id=user.id), pickle.dumps(user_from_cache))
@@ -155,11 +160,20 @@ async def selected_course_callback(
             sales_start_dt=config.sales_start_dt.strftime("%Y-%m-%d %H:%M")
         )
 
-    if captured_at:
+    if not download_opened and captured_at:
+        text += texts.download_start_time_msg.format(
+            time=config.download_start_dt.strftime("%Y-%m-%d %H:%M")
+        )
+        keyboard = kb.back_button('menu')
+    elif download_opened and captured_at:
         moscow_tz = timezone(timedelta(hours=config.time_zone))
-        can_download_before = datetime.fromisoformat(
+        captured_at = datetime.fromisoformat(
             captured_at.replace("Z", "+00:00")
-        ) + timedelta(
+        )
+        if captured_at < config.download_start_dt:
+            captured_at = config.download_start_dt
+
+        can_download_before = captured_at + timedelta(
             days=config.days_to_download_course_after_payment,
             hours=config.time_zone
         )

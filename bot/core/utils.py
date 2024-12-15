@@ -81,6 +81,11 @@ def is_sale_open() -> bool:
     return datetime.now(tz) > config.sales_start_dt
 
 
+def is_download_open() -> bool:
+    tz = timezone(timedelta(hours=config.time_zone))
+    return datetime.now(tz) >= config.download_start_dt
+
+
 def is_extended_course_available(sold_quantity: int) -> bool:
     tz = timezone(timedelta(hours=config.time_zone))
     return (
