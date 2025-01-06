@@ -29,8 +29,7 @@ class BotConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='tg_')
 
     token: str
-    name: str = 'bestbassbot'
-    link: str = f'https://t.me/{name}'
+    name: str
     group_id: int
     webhook_path: str = ''
 
@@ -38,6 +37,10 @@ class BotConfig(BaseSettings):
     admin_roles: list = ["admin", "superuser"]
     admin_list: Union[str, list]
     support_address: str
+
+    @property
+    def link(self):
+        return f'https://t.me/{self.name}'
 
     @field_validator('admin_list')
     def make_list_from_string(cls, v: str):
