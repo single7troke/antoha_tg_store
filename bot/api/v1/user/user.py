@@ -459,7 +459,7 @@ async def course_part_callback(
     await callback.message.edit_caption(
         caption=texts.selected_part.format(
             course_name=course.name, part_id=part_id, description=course.parts[part_id]
-        ),
+        ) + texts.link_expire_info,
         reply_markup=kb.create_download_link_keyboard(course, part_id)
     )
 
