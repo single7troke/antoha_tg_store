@@ -1,7 +1,9 @@
 import base64
+import logging
 import pickle
 from typing import Tuple, Optional, Any
 
+import aiohttp
 from cryptography.fernet import Fernet
 
 from models.models import User
@@ -27,3 +29,26 @@ def get_data_from_link_key(link_key: str) -> Optional[Tuple[Any, Any, Any]]:
 def bytes_to_user(data: bytes) -> User:
     user = pickle.loads(data)
     return user
+
+
+async def send_message(chat_id: str, text: str) -> None:
+    url = f"https://api.telegram.org/bot{config.tg_token}/sendMessage"
+
+    params = {
+        "chat_id": chat_id,
+        "text": text
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, params=params) as response:
+            response_data = await response.json()
+            if response.status == 200:
+                logging.info(f"Message sent successfully to: {chat_id}, response_data: {response_data}")
+            else:
+                logging.info(f"Failed to send message: {response_data}")
+
+
+async def send_sell_notification_to_admins(course_type, user_id):
+    text = f'{user_id} оплатил расширенный курс' if course_type == 'extended' else f'{user_id} оплатил базовый курс'
+    for admin_id in config.tg_admin_list:
+        await send_message(admin_id, text)

@@ -7,7 +7,7 @@ from starlette import status
 
 from db.redis import get_redis_db, RedisDB
 from core.cache_key_constructor import CacheKeyConstructor
-from core.utils import bytes_to_user
+from core.utils import bytes_to_user, send_message, send_sell_notification_to_admins
 from core.config import get_config
 
 router = APIRouter()
@@ -59,5 +59,8 @@ async def payment_callback(
         user.courses[course_id].captured_at = payment_data['captured_at']
         user.courses[course_id].payment_ids[price_type] = payment_data['id']
         await cache.create(key, pickle.dumps(user))
+        if user_id not in config.tg_admin_list:
+            await send_message(user_id, 'Спасибо за покупку!\nДоступ к урокам открыт.\nНажмите "<-Назад", затем "Курс"')
+        await send_sell_notification_to_admins(price_type, user_id)
 
     return {'status': 'ok'}

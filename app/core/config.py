@@ -1,6 +1,8 @@
 import logging
 import os
+from typing import Union
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +34,12 @@ class Config(BaseSettings):
     db: DB = DB()
     cache: Cache = Cache()
     payment: Payment = Payment()
+    tg_token: str
+    tg_admin_list: Union[str, list]
+
+    @field_validator('tg_admin_list')
+    def make_list_from_string(cls, v: str):
+        return [i for i in v.split(',')]
 
 
 config: Config | None = None
