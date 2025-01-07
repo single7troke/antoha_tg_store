@@ -31,7 +31,7 @@ def bytes_to_user(data: bytes) -> User:
     return user
 
 
-async def send_message(chat_id: str, text: str) -> None:
+async def send_message(chat_id: str, text: str) -> str | None:
     url = f"https://api.telegram.org/bot{config.tg_token}/sendMessage"
 
     params = {
@@ -43,9 +43,27 @@ async def send_message(chat_id: str, text: str) -> None:
         async with session.get(url, params=params) as response:
             response_data = await response.json()
             if response.status == 200:
+                message_id = response_data['result']['message_id']
                 logging.info(f"Message sent successfully to: {chat_id}, response_data: {response_data}")
+                return message_id
             else:
                 logging.info(f"Failed to send message: {response_data}")
+
+
+async def delete_message(chat_id: str, message_id: str) -> str:
+    url = f"https://api.telegram.org/bot{config.tg_token}/deleteMessage"
+
+    params = {
+        "chat_id": chat_id,
+        "message_id": message_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, params=params) as response:
+            if response.status == 200:
+                logging.info(f"Message with ID {message_id} deleted successfully.")
+            else:
+                logging.info(f"Failed to delete message: {await response.text()}")
 
 
 async def send_sell_notification_to_admins(course_type, user_id):
