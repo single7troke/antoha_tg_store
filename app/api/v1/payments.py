@@ -59,7 +59,10 @@ async def payment_callback(
         user.courses[course_id].captured_at = payment_data['captured_at']
         user.courses[course_id].payment_ids[price_type] = payment_data['id']
         await cache.create(key, pickle.dumps(user))
-        msg_id = await send_message(user_id, 'Спасибо за покупку!\nДоступ к урокам открыт.\nНажмите на /menu, затем "Курс"')
+        text = ('Спасибо за покупку!'
+                f'\nЧек отправлен на email: {payment_data["metadata"]["email"]}'
+                '\nНажмите на /menu, затем "Курс"')
+        msg_id = await send_message(user_id, text)
         if msg_id:
             await delete_message(user_id, msg_id - 1)
         if user_id not in config.tg_admin_list:
