@@ -28,6 +28,7 @@ def create_payment(
 ) -> Optional[PaymentResponse]:
     u_id = uuid.uuid4()
     ts = int(time.time())
+    desc = texts.receipt_item_description_extended if price_type == 'extended' else texts.receipt_item_description,
     try:
         payment = Payment.create({
             "amount": {
@@ -43,7 +44,7 @@ def create_payment(
                     "email": email
                 },
                 "items": [{
-                    "description": texts.receipt_item_description,
+                    "description": desc,
                     "amount": {
                         "value": course.prices[price_type],
                         "currency": 'RUB'
