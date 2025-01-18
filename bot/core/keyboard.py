@@ -49,7 +49,7 @@ def catalog_keyboard():
 
 def course_keyboard() -> InlineKeyboardMarkup:
     buttons = []
-    if utils.is_sale_open():
+    if utils.is_sale_open() and not utils.is_sale_stopped():
         buttons.append(
             [InlineKeyboardButton(
                 text=config.buttons.prices, callback_data=CoursePricesCallback(data='prices').pack()

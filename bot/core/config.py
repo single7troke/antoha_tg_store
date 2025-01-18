@@ -77,6 +77,7 @@ class Config(BaseSettings):
     intro_video_path: str
     secret_key: str
     sales_start_dt: datetime
+    sales_stop_dt: datetime
     download_start_dt: datetime
     stop_selling_extended_course_dt: datetime
     extended_course_sell_limit: int

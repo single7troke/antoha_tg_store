@@ -160,6 +160,9 @@ async def selected_course_callback(
             sales_start_dt=config.sales_start_dt.strftime("%Y-%m-%d %H:%M")
         )
 
+    if utils.is_sale_stopped() and not captured_at:
+        text += texts.sales_stopped
+
     if not download_opened and captured_at:
         text += texts.download_start_time_msg.format(
             time=config.download_start_dt.strftime("%Y-%m-%d %H:%M")
