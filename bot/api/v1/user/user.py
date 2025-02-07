@@ -20,7 +20,24 @@ logger = logging.getLogger(__name__)
 # TODO добавить описание к каждой функции
 
 
-@router.message(Command(commands=('menu', 'start',)))
+@router.message(Command(commands=('start',)))
+async def start(message: types.Message):
+    logger.info(f'Start. '
+                f'user_id: {message.from_user.id}, '
+                f'user_name: {message.from_user.username}')
+    response = await message.bot.send_photo(
+        chat_id=message.chat.id,
+        photo=FSInputFile(
+            config.path_to_files + '/image/horizontal.jpg',
+            filename=f'pic_{time.time()}',
+            chunk_size=4096
+        ),
+        caption=texts.start_text.format(name=message.from_user.first_name)
+    )
+    await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
+
+
+@router.message(Command(commands=('menu',)))
 async def main_menu(message: types.Message):
     logger.info(f'Main menu. '
                 f'user_id: {message.from_user.id}, '
