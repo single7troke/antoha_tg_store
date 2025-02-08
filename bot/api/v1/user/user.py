@@ -414,7 +414,7 @@ async def pay_button_callback(
         return
 
     text = texts.chosen_course_type.format(
-            course_type='\n\"Базовый пакет\"' if price_type == 'basic' else '\n\"Расширенный пакет с проверкой домашних заданий\"'
+            course_type='\n\"Базовый тариф\"' if price_type == 'basic' else '\n\"Расширенный тариф с проверкой домашних заданий\"'
         )
     text += texts.offer_rules
 
