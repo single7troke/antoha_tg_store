@@ -175,8 +175,16 @@ def admin_main_menu_keyboard():
             callback_data=AdminMainMenuCallback(data='user').pack()
         )],
         [InlineKeyboardButton(
-            text='Список пользователей',
-            callback_data=AdminMainMenuCallback(data='user_list').pack()
+            text='Купившие расширенный курс',
+            callback_data=AdminMainMenuCallback(data='extended_buyers').pack()
+        )],
+        [InlineKeyboardButton(
+            text='Купившие базовый курс',
+            callback_data=AdminMainMenuCallback(data='basic_buyers').pack()
+        )],
+        [InlineKeyboardButton(
+            text='Статистика покупок',
+            callback_data=AdminMainMenuCallback(data='stats').pack()
         )],
         [InlineKeyboardButton(
             text='Информация о платеже',

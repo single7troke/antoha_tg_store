@@ -1,6 +1,7 @@
 import json
 import logging
 import pickle
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 from aiogram import types, Router, F
@@ -75,8 +76,8 @@ async def get_user(message: types.Message, state: FSMContext):
     await utils.clear_messages(message.bot, message.chat.id, response.message_id - 1)
 
 
-@router.callback_query(cb.AdminMainMenuCallback.filter(F.data == 'user_list'))
-async def user_list(
+@router.callback_query(cb.AdminMainMenuCallback.filter(F.data == 'extended_buyers'))
+async def extended_buyers(
         callback: types.CallbackQuery,
         callback_data: cb.MainMenuCallback,
 ):
@@ -86,13 +87,68 @@ async def user_list(
     for key in user_keys:
         user = await cache.get(key)
         user = bytes_to_user(user)
-        text += (f'id: {CacheKeyConstructor.extract_user_id(key.decode())}, '
-                 f'username: {user.tg_user_data["username"]}\n'
-                 f'paid: {user.courses[1001].paid}, access: {user.courses[1001].promo_access}\n\n')
+        if user.courses[1001].paid == 'extended':
+            text += (f'id: {CacheKeyConstructor.extract_user_id(key.decode())}, '
+                     f'username: {user.tg_user_data["username"]}\n'
+                     f'paid: {user.courses[1001].paid}, access: {user.courses[1001].promo_access}\n\n')
 
     response = await callback.bot.send_message(
         chat_id=callback.message.chat.id,
-        text=text,
+        text=text if text else '-',
+        reply_markup=kb.back_button('admin_main_menu')
+    )
+
+    await utils.clear_messages(callback.bot, callback.message.chat.id, response.message_id - 1)
+
+
+@router.callback_query(cb.AdminMainMenuCallback.filter(F.data == 'basic_buyers'))
+async def basic_buyers(
+        callback: types.CallbackQuery,
+        callback_data: cb.MainMenuCallback,
+):
+    cache: RedisDB = get_redis_db()
+    user_keys = await cache.find_all_with('user')
+    text = ''
+    for key in user_keys:
+        user = await cache.get(key)
+        user = bytes_to_user(user)
+        if user.courses[1001].paid == 'basic':
+            text += (f'id: {CacheKeyConstructor.extract_user_id(key.decode())}, '
+                     f'username: {user.tg_user_data["username"]}\n'
+                     f'paid: {user.courses[1001].paid}, access: {user.courses[1001].promo_access}\n\n')
+
+    response = await callback.bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=text if text else '-',
+        reply_markup=kb.back_button('admin_main_menu')
+    )
+
+    await utils.clear_messages(callback.bot, callback.message.chat.id, response.message_id - 1)
+
+
+@router.callback_query(cb.AdminMainMenuCallback.filter(F.data == 'stats'))
+async def user_stats(
+        callback: types.CallbackQuery,
+        callback_data: cb.MainMenuCallback,
+):
+    cache: RedisDB = get_redis_db()
+    user_keys = await cache.find_all_with('user')
+    data = defaultdict(int)
+    for key in user_keys:
+        user = await cache.get(key)
+        user = bytes_to_user(user)
+        if user.courses[1001].paid == 'extended':
+            data['extended'] += 1
+        elif user.courses[1001].paid == 'basic':
+            data['basic'] += 1
+        elif user.courses[1001].promo_access:
+            data['promo'] += 1
+
+    text = '\n'.join(f'{key} - {value}' for key, value in data.items())
+
+    response = await callback.bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=text if text else '-',
         reply_markup=kb.back_button('admin_main_menu')
     )
 
