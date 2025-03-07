@@ -2,7 +2,7 @@ import json
 import logging
 import pickle
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from aiogram import types, Router, F
 from aiogram.filters import Command
@@ -216,7 +216,7 @@ async def grant_access_to_user(message: types.Message, state: FSMContext):
     if user_from_cache:
         if not user_from_cache.courses[1001].paid:
             user_from_cache.courses[1001].promo_access = True
-            user_from_cache.courses[1001].captured_at = datetime.now().isoformat()
+            user_from_cache.courses[1001].captured_at = datetime.now(timezone.utc).isoformat()
             await cache.update(
                 CacheKeyConstructor.user(user_id),
                 pickle.dumps(user_from_cache)
@@ -266,7 +266,7 @@ async def grant_access_to_user(message: types.Message, state: FSMContext):
                 captured_at.replace("Z", "+00:00")
             ) + timedelta(days=1)
 
-            user_from_cache.courses[1001].captured_at = updated_captured_at.isoformat()
+            user_from_cache.courses[1001].captured_at = updated_captured_at.replace(tzinfo=timezone.utc).isoformat()
             await cache.update(
                 CacheKeyConstructor.user(user_id),
                 pickle.dumps(user_from_cache)
